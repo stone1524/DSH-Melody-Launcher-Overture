@@ -295,6 +295,33 @@
   border: 2px solid #000;
 }
 
+/* CRT 扫描线 + 抖动底纹：只在首页标题界面叠加，管理页保持干净。 */
+:root[data-theme='pixel'] .hub-home {
+  position: relative;
+  background-image: repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0 25%, transparent 0 50%);
+  background-size: 4px 4px;
+}
+
+:root[data-theme='pixel'] .hub-home::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.09) 0 1px, transparent 1px 3px);
+}
+
+/* RPG 菜单式侧栏：选中项左侧 ▶ 标记。 */
+:root[data-theme='pixel'] .sidebar-item { position: relative; }
+:root[data-theme='pixel'] .sidebar-item.active { padding-left: 18px; }
+:root[data-theme='pixel'] .sidebar-item.active::before {
+  content: '▶';
+  position: absolute;
+  left: 5px;
+  font-size: 9px;
+  line-height: 1;
+}
+
 /* 主题精简为日间/夜间两款；ocean/berry/graphite 已移除，旧存档值自动回退日间。 */
 /* Keep long-running resource checks mounted while another manager view is visible. */
 .surface-host {
@@ -728,6 +755,226 @@ input:focus-visible {
 
 .agent-cli-test-ok { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
 .agent-cli-test-fail { background: var(--danger-soft); color: var(--danger); }
+
+/* ===== 8-bit 首页（Hub Home）：游戏标题界面，取代上游「左品牌列+右大按钮」构图 ===== */
+.hub-home {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--workspace-bg);
+}
+
+.hub-titlebar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 2px solid var(--line-strong);
+  background: var(--chrome);
+}
+
+.hub-titlebar-logo {
+  border: 2px solid var(--line-strong);
+}
+
+.hub-titlebar-name {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.hub-titlebar-ver {
+  padding: 1px 7px;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hub-titlebar-note {
+  margin-left: auto;
+  color: var(--quiet);
+  font-size: 11.5px;
+}
+
+.hub-main {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(320px, 44%) minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.hub-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border: 3px solid #000;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--surface-strong), 5px 5px 0 rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.hub-panel-head {
+  flex: none;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--line-strong);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.hub-start-panel .hub-panel-head { color: var(--ink); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+
+.hub-start-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px;
+}
+
+.hub-start-state {
+  display: grid;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  background: var(--surface-soft);
+  font-size: 12px;
+}
+
+.hub-start-state-row { display: flex; gap: 10px; align-items: baseline; }
+.hub-start-state-row b { flex: none; min-width: 48px; color: var(--muted); font-size: 11px; }
+.hub-start-state-row span:last-child { color: var(--ink); font-weight: 600; }
+.hub-state-warn { color: var(--amber) !important; }
+.hub-state-run { color: var(--accent) !important; }
+
+.hub-start-body .launcher-start-button { flex: none; min-height: 86px; }
+
+.hub-start-sub { display: flex; gap: 8px; }
+
+.hub-start-sub-button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 2px solid var(--line-strong);
+  color: var(--ink);
+  background: var(--surface-soft);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hub-start-sub-button:hover { border-color: var(--accent); color: var(--accent); }
+
+.hub-agents-panel { padding-bottom: 6px; }
+
+.hub-agents-panel .hub-panel-head { color: var(--ink); background: color-mix(in srgb, var(--blue) 16%, var(--surface)); }
+
+.hub-agents-grid {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hub-agent-card {
+  position: relative;
+  display: grid;
+  padding: 10px 78px 10px 12px;
+  border: 2px solid var(--line-strong);
+  background: var(--surface-soft);
+  text-align: left;
+  cursor: pointer;
+  gap: 4px;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+
+.hub-agent-card:hover { border-color: var(--accent); background: var(--surface); }
+
+.hub-agent-card.installed { border-color: var(--accent); }
+
+.hub-agent-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.hub-agent-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--quiet);
+  font-size: 11px;
+}
+
+.hub-agent-card.installed .hub-agent-state { color: var(--accent); }
+
+.hub-agent-install {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  padding: 4px 11px;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.hub-agent-install:hover { color: #fff; background: var(--accent); }
+
+.hub-agents-foot {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 12px 8px;
+}
+
+.hub-agents-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hub-ticker {
+  flex: none;
+  height: 150px;
+  margin: 0 14px 14px;
+  border: 3px solid #000;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--surface-strong), 5px 5px 0 rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.hub-ticker .widget-zone { height: 100%; }
 
 /* ===== 首页「Agent 速装」网格：六工具与 DSH 平级露出 ===== */
 .agent-quick {
