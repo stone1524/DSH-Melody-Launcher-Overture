@@ -84,7 +84,8 @@
         "from": "offline-packs",
         "to": "offline-packs",
         "filter": [
-          "**/*"
+          "**/*",
+          "!**/pack.zip"
         ]
       }
     ],

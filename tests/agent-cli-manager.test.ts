@@ -66,6 +66,11 @@ function makeOptions(overrides: Partial<AgentCliManagerOptions> = {}): AgentCliM
   }
 }
 
+/** 离线包目录统一包成候选数组（管理器按优先级查找）。 */
+function packsOption(packDir: string): Pick<AgentCliManagerOptions, 'offlinePacksDirs'> {
+  return { offlinePacksDirs: [packDir] }
+}
+
 describe('agent-cli manager', () => {
   it('list 返回目录与 providers，未安装时 record 为空', async () => {
     const manager = createAgentCliManager(makeOptions())
@@ -213,7 +218,7 @@ describe('agent-cli manager', () => {
     await writeFile(path.join(dir, 'offline-packs', 'manifest.json'), JSON.stringify({ packs: { codex: { version: '7.7.7' } } }), 'utf8')
 
     const state: StubState = { calls: [], installSucceeds: true, verifySucceeds: true, versionOutput: '7.7.7' }
-    const manager = createAgentCliManager(makeOptions({ runCommand: stubRunner(state), offlinePacksDir: path.join(dir, 'offline-packs') }))
+    const manager = createAgentCliManager(makeOptions({ runCommand: stubRunner(state), ...packsOption(path.join(dir, 'offline-packs')) }))
     const { entry, logTail } = await manager.install('codex')
 
     expect(entry.record?.version).toBe('7.7.7')
@@ -230,7 +235,7 @@ describe('agent-cli manager', () => {
     // 没有内置安装器：明确报错。
     const manager1 = createAgentCliManager(makeOptions({
       runCommand: stubRunner(state),
-      offlinePacksDir: packsDir,
+      ...packsOption(packsDir),
       runRawInstaller: exePath => { launched.push(exePath) },
     }))
     await expect(manager1.install('zcode')).rejects.toThrow(/未内置/)

@@ -5,7 +5,7 @@
 // 运行时依赖全部注入（node 解析器、命令执行器、fetch），测试用替身。
 
 import { mkdirSync } from 'node:fs'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -63,8 +63,11 @@ export interface AgentCliManagerOptions {
   fetchImpl?: typeof fetch
   /** 覆盖用户主目录（测试注入）。 */
   homeDir?: string
-  /** 内置离线包目录（打包后 process.resourcesPath/offline-packs，开发态项目根/offline-packs）。 */
-  offlinePacksDir?: string
+  /**
+   * 内置离线包目录候选（按优先级）：便携 exe 同级的 offline-packs/ → 资源目录 → 开发态项目根。
+   * Codex 离线包以 zip 形式随 exe 一起分发（不烤进 exe，控制体积）。
+   */
+  offlinePacksDirs?: string[]
   /** 官方安装器直启的注入点（测试替身）；缺省 spawnCommand 拉起后不等待。 */
   runRawInstaller?: (installerPath: string) => void
   now?: () => Date
@@ -329,27 +332,46 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
     return { version, logLines }
   }
 
-  /** 内置离线包清单：offline-packs/manifest.json。 */
+  /** 内置离线包清单：各候选目录下 manifest.json 的 packs 合并（先到先得，后者补缺）。 */
   interface OfflinePackManifest {
     packs: Record<string, { version?: string; builtAt?: string }>
   }
 
+  function offlineDirs(): string[] {
+    return options.offlinePacksDirs ?? []
+  }
+
   function readOfflineManifest(): OfflinePackManifest {
-    if (!options.offlinePacksDir) return { packs: {} }
-    try {
-      const raw = readFileSync(path.join(options.offlinePacksDir, 'manifest.json'), 'utf8')
-      const parsed = JSON.parse(raw) as OfflinePackManifest
-      return parsed && typeof parsed === 'object' && parsed.packs ? parsed : { packs: {} }
-    } catch {
-      return { packs: {} }
+    const packs: OfflinePackManifest['packs'] = {}
+    for (const dir of offlineDirs()) {
+      try {
+        const raw = readFileSync(path.join(dir, 'manifest.json'), 'utf8')
+        const parsed = JSON.parse(raw) as OfflinePackManifest
+        if (parsed && typeof parsed === 'object' && parsed.packs) {
+          for (const [id, entry] of Object.entries(parsed.packs)) {
+            if (!packs[id]) packs[id] = entry
+          }
+        }
+      } catch {
+        // 该候选目录没有 manifest，跳过。
+      }
     }
+    return { packs }
+  }
+
+  /** 在候选目录里找 <id>/<相对名> 的第一个现存文件。 */
+  function findOfflineFile(id: string, relativeName: string): string | null {
+    for (const dir of offlineDirs()) {
+      const candidate = path.join(dir, id, relativeName)
+      if (existsSync(candidate)) return candidate
+    }
+    return null
   }
 
   /** 内置离线包通道：解压构建期打好的前缀快照到私有前缀，零网络安装。 */
   async function installViaOfflineBundle(definition: { id: AgentCliId; name: string; npmPackage: string; versionArgs: string[] }): Promise<{ version: string | null; logLines: string[]; source: 'offline-bundle' } | null> {
-    if (!options.offlinePacksDir) return null
-    const zipPath = path.join(options.offlinePacksDir, definition.id, 'pack.zip')
-    if (!existsSync(zipPath)) return null
+    const zipPath = findOfflineFile(definition.id, 'pack.zip')
+    if (!zipPath) return null
     const logLines: string[] = []
     options.onOutput?.('info', `${definition.name}：发现内置离线包，直接解压安装（无需联网）…`)
     try {
@@ -381,16 +403,8 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
 
   /** 官方安装器直启通道（ZCode 桌面端）：拉起内置的官方安装向导，过程由客户在向导里完成。 */
   async function installViaRawInstaller(definition: { id: AgentCliId; name: string }): Promise<{ version: string | null; logLines: string[] }> {
-    if (!options.offlinePacksDir) throw new AgentCliError('未内置离线安装包。')
-    const dir = path.join(options.offlinePacksDir, definition.id)
-    let installerPath: string | null = null
-    try {
-      const entries = await readdir(dir)
-      installerPath = entries.find(name => name.toLowerCase().endsWith('.exe')) ?? null
-      if (installerPath) installerPath = path.join(dir, installerPath)
-    } catch {
-      installerPath = null
-    }
+    const installerPath = findOfflineFile(definition.id, 'ZCode-Setup.exe')
+      ?? findOfflineFileEndingWith(definition.id, '.exe')
     if (!installerPath) {
       throw new AgentCliError(`${definition.name} 的离线安装包未内置（offline-packs 目录里没有安装器）。请联网到官方渠道下载。`)
     }
@@ -402,6 +416,22 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
     const manifestVersion = readOfflineManifest().packs[definition.id]?.version ?? null
     const logLines = [`已启动官方安装器：${path.basename(installerPath)}`]
     return { version: manifestVersion, logLines }
+  }
+
+  /** 在候选目录里找 <id>/ 下扩展名匹配的第一个文件（raw 安装器文件名带版本号，无法写死）。 */
+  function findOfflineFileEndingWith(id: string, suffix: string): string | null {
+    for (const dir of offlineDirs()) {
+      const subDir = path.join(dir, id)
+      try {
+        // readdir 同步语义用 existsSync 无法替代，此处阻塞可接受（目录极小）。
+        const entries = readdirSync(subDir)
+        const hit = entries.find(name => name.toLowerCase().endsWith(suffix))
+        if (hit) return path.join(subDir, hit)
+      } catch {
+        // 子目录不存在，试下一个候选。
+      }
+    }
+    return null
   }
 
   return {

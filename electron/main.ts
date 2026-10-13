@@ -1005,8 +1005,12 @@ function createServices(): Services {
     },
     readNpmRegistry: () => settings.read().then(value => value.network?.npmRegistry ?? null),
     onOutput: (level, text) => events.output('plugin', level, text),
-    // 内置离线包：打包态随资源目录分发，开发态用项目根的同名目录。
-    offlinePacksDir: offlinePacksRoot,
+    // 内置离线包候选：便携 exe 同级（随行 zip 分发）→ 资源目录 → 开发态项目根。
+    offlinePacksDirs: [
+      path.join(path.dirname(process.execPath), 'offline-packs'),
+      path.join(process.resourcesPath, 'offline-packs'),
+      offlinePacksRoot,
+    ],
   })
 
   return { settings, pluginReceiptsPath, runtime, installer, launcherUpdater, pluginTrial, aiInstaller, copilot, packManager: packManager!, githubAuth, applicationAddons, catalogSync, dshMarket, desktopPlugins, recommendedWebUi, runtimeVersions, profiles: profileService, agentCli, profilePoolReady, restoreOfficialPack, listOfficialPackVersions: async () => listOfficialPackVersions(await officialListDeps()), readOfficialPackStatus: force => resolveOfficialPackStatus(force === true), installOfficialPackVersion, officialPackBootstrap }
