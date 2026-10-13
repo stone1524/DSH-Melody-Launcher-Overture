@@ -36,7 +36,7 @@
 | 7 | ✅ | **未启用压缩上限** | package.json build 无 compression 配置 | `compression: "maximum"` | portable/installer 再降数 MB |
 | 8 | ✅ | **win-unpacked 携带 20MB LICENSES.chromium.html** | win-unpacked 根目录实测 20MB | 新增 `scripts/after-pack.cjs`（afterPack 钩子）删除该文件。⚠️ 法律提示：这是 Chromium 第三方许可文本，删除后分发物不再携带完整许可清单（Chromium 内部 about:credits 仍含），商用分发前建议恢复 | win-unpacked -20MB |
 | 9 | ✅ | **whale-avatar.png 361.6KB 未压缩**（public/ 静态资源直通 dist），且显示尺寸仅 30×30（LauncherHome.tsx 标题栏） | 源图 512×512 → 重采样 256 + 256 色 palette 量化 = **35.3KB（-90%）** | sharp 临时环境处理（未进项目依赖） | -326KB |
-| 26 | ✅ | **launcher-icon.png 与 launcher-logo.png 字节级同一文件**（md5 相同），favicon（index.html）、窗口图标（main.ts:64）、README 各发一份进 dist | md5sum 对比 | 统一指向 launcher-logo.png 后删除 icon 副本；logo 本体保留字节原样（AUTHORIZATION.md 声明其为保留的上游像素风资产，不做有损重编码） | -56KB |
+| 26 | ✅ | **launcher-icon.png 与 launcher-logo.png 字节级同一文件**（md5 相同），favicon（index.html）、窗口图标（main.ts:64）、README 各发一份进 dist | md5sum 对比 | 统一指向 launcher-logo.png 后删除 icon 副本；logo 本体为上游像素风原版资产，保留字节原样不做有损重编码 | -56KB |
 | 10 | 📋 | **dxcompiler.dll 25MB**（Electron 43 自带，D3D 着色器编译） | win-unpacked 实测 | 删除可再省 25MB（unpacked 口径），但在部分 GPU/驱动组合下有渲染风险，本次不动 | （风险换体积，不建议） |
 
 ### P2 构建 / 发布流程类

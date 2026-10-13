@@ -84,7 +84,7 @@
 ### 改版增补（2026-09-02 · DeepSeek 蓝 + 启动页重设计 + skills.sh 索引）
 
 - **主题**：新增 `deepseek` 蓝（#4D6BFE 系）并设为**默认主题**（`:root` 基座即蓝，forest 收进 data-theme 块可切换）；styles.css 与整合包对话框里的硬编码品牌色全部改 `var()`/`color-mix()`，设置、管理、对话框、两个市场全部跟随主题。
-- **品牌资产**：`public/launcher-logo.png`（256×256 RGBA，从 `build/icon.ico` 抽取，与 portable exe 图标同源）+ 重导透明版 `launcher-icon.png`；index.html 补 favicon。
+- **品牌资产**：`public/whale-avatar.png`（256×256 鲸鱼娘，首页头像，`build/icon.ico` 与 exe/快捷方式图标同源）+ `public/launcher-logo.png`（256×256 像素风原版，favicon 与窗口图标引用，上游品牌资产）；index.html 补 favicon。
 - **启动页**：左 logo 大图（入场动画）+ 右浮起控制卡（状态芯片 / 启动大按钮 / 单行 4 工具按钮 / 启动配置行），窄窗降级。
 - **技能市场扩容**：通用技能改为 **skills.sh 目录索引**——主进程 `electron/skills-sh.ts` 用公开 `/api/search?q=` 做多查询聚合（字母/数字/常用词 → 去重 → 按安装量排序，上限 2500），磁盘缓存 `skills-sh-index.json`（24h、stale-while-revalidate）；卡片显示安装量徽章；安装走 `skillMarketInstallByName`（main/master 分支逐个归档分析 + `matchSkillsShTarget` 定位）。DSH 社区两仓库保留归档式直装。skills.sh API 标注 legacy，失败时该栏空态+重试，社区栏不受影响。
 - **DSH Market 卡片统一**：与技能市场同几何（minmax(250px,1fr)/radius 10/同投影），星数改药丸徽章（金色星标），meta 增加版本号药丸；工具条搜索框与下拉改主题变量。

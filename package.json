@@ -15,9 +15,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Miyazawai/DSH-Melody-Launcher-Overture.git"
+    "url": "git+https://github.com/stone1524/DSH-Melody-Launcher-Overture.git"
   },
-  "homepage": "https://github.com/Miyazawai/DSH-Melody-Launcher-Overture#readme",
+  "homepage": "https://github.com/stone1524/DSH-Melody-Launcher-Overture#readme",
   "engines": {
     "node": ">=20"
   },

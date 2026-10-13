@@ -8,11 +8,11 @@
 
 Download one executable: the first run auto-imports the **official default modpack** — DSH itself, a full web UI, and Office document skills. Hit Launch and you can chat, build slide decks and write reports. Nothing to preinstall.
 
-[![Release](https://img.shields.io/github/v/release/Miyazawai/DSH-Melody-Launcher-Overture?style=for-the-badge&logo=github&color=6C7BFF)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/Miyazawai/DSH-Melody-Launcher-Overture/build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=build)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/actions/workflows/build.yml)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/releases)
+[![Release](https://img.shields.io/github/v/release/stone1524/DSH-Melody-Launcher-Overture?style=for-the-badge&logo=github&color=6C7BFF)](https://github.com/stone1524/DSH-Melody-Launcher-Overture/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/stone1524/DSH-Melody-Launcher-Overture/build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=build)](https://github.com/stone1524/DSH-Melody-Launcher-Overture/actions/workflows/build.yml)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/stone1524/DSH-Melody-Launcher-Overture/releases)
 [![Upstream](https://img.shields.io/badge/upstream-rirko%2Fdsh--melody--launcher-6C7BFF?style=for-the-badge&logo=github&logoColor=white)](https://github.com/rirko/dsh-melody-launcher)
-[![Tests](https://img.shields.io/badge/tests-953%20passing-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture)
+[![Tests](https://img.shields.io/badge/tests-953%20passing-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://github.com/stone1524/DSH-Melody-Launcher-Overture)
 
 **[简体中文](README.md) · English**
 
@@ -88,7 +88,7 @@ Download one executable: the first run auto-imports the **official default modpa
 
 ## Getting started
 
-1. Grab `DSH-Launcher-*-portable.exe` from [**Releases**](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/releases). The binary is not code-signed yet, so SmartScreen may warn — verify it comes from this repo, then choose "More info → Run anyway".
+1. Grab `DSH-Launcher-*-portable.exe` from [**Releases**](https://github.com/stone1524/DSH-Melody-Launcher-Overture/releases). The binary is not code-signed yet, so SmartScreen may warn — verify it comes from this repo, then choose "More info → Run anyway".
 2. Wait for the first-run import of the official modpack (~128 MB; the Modpacks page shows a progress bar with speed and source, then the import stages).
 3. Add your DeepSeek (or other) API key in **Settings** — keys are stored per-pack and never leave your machine in exports.
 4. Hit **Launch DSH**. Try: *"create a pptx titled Quarterly Report with one bullet slide"* — the Office skills handle it.
@@ -98,7 +98,7 @@ Download one executable: the first run auto-imports the **official default modpa
 Requires Node.js ≥ 20.
 
 ```powershell
-git clone https://github.com/Miyazawai/DSH-Melody-Launcher-Overture.git
+git clone https://github.com/stone1524/DSH-Melody-Launcher-Overture.git
 cd DSH-Melody-Launcher-Overture
 npm install
 npm run dev           # dev mode

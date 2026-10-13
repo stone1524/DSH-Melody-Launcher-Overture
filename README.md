@@ -10,11 +10,11 @@
 
 <br />
 
-[![Release](https://img.shields.io/github/v/release/Miyazawai/DSH-Melody-Launcher-Overture?style=for-the-badge&logo=github&color=6C7BFF)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/Miyazawai/DSH-Melody-Launcher-Overture/build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=build)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/actions/workflows/build.yml)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/releases)
+[![Release](https://img.shields.io/github/v/release/stone1524/DSH-Melody-Launcher-Overture?style=for-the-badge&logo=github&color=6C7BFF)](https://github.com/stone1524/DSH-Melody-Launcher-Overture/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/stone1524/DSH-Melody-Launcher-Overture/build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=build)](https://github.com/stone1524/DSH-Melody-Launcher-Overture/actions/workflows/build.yml)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/stone1524/DSH-Melody-Launcher-Overture/releases)
 [![Upstream](https://img.shields.io/badge/上游-rirko%2Fdsh--melody--launcher-6C7BFF?style=for-the-badge&logo=github&logoColor=white)](https://github.com/rirko/dsh-melody-launcher)
-[![Tests](https://img.shields.io/badge/tests-953%20passing-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture)
+[![Tests](https://img.shields.io/badge/tests-953%20passing-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://github.com/stone1524/DSH-Melody-Launcher-Overture)
 
 [![Electron](https://img.shields.io/badge/Electron-43-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
@@ -32,7 +32,7 @@
 > **关于本仓库**：「序曲（Overture）」是 [rirko/dsh-melody-launcher](https://github.com/rirko/dsh-melody-launcher) 的 **C 端分支**，对应「暴力整合包模式」产品线。上游仓库是启动器的主线；本分支聚焦**个人玩家的整合包体验**——开箱即玩、按包隔离、整包搬运。架构与词汇表见上游主线，本分支的增量决策记录在 `CONTEXT.md` 与 [CHANGELOG.md](CHANGELOG.md)。
 
 > [!IMPORTANT]
-> **关于本 Fork**：本仓库是 [Miyazawai/DSH-Melody-Launcher-Overture](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture) 的二次创作分支，经原作者许可进行（授权记录见 `docs/AUTHORIZATION.md`，上游未声明开源许可证，版权归上游作者）。本 Fork 在「序曲」基础上的增量方向：多 Agent CLI 包支持（Qwen Code / OpenCode / OpenClaw 等）、macOS 风格界面重构、面向小白交付的自检与诊断体验。对上游两个仓库的架构与付出致谢。
+> **关于本 Fork**：本仓库是 [Miyazawai/DSH-Melody-Launcher-Overture](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture) 的二次创作分支，经原作者许可进行（上游未声明开源许可证，版权归上游作者）。本 Fork 在「序曲」基础上的增量方向：多 Agent CLI 包支持（Qwen Code / OpenCode / OpenClaw 等）、macOS 风格界面重构、面向小白交付的自检与诊断体验。对上游两个仓库的架构与付出致谢。
 
 ---
 
@@ -145,7 +145,7 @@
 
 ### 1. 下载
 
-前往 [**Releases**](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/releases) 下载 `DSH-Launcher-*-portable.exe`，单文件、免安装。
+前往 [**Releases**](https://github.com/stone1524/DSH-Melody-Launcher-Overture/releases) 下载 `DSH-Launcher-*-portable.exe`，单文件、免安装。
 
 > [!IMPORTANT]
 > 便携版目前**未使用商业代码签名证书**。首次运行时 Windows SmartScreen 可能提示来源未知 —— 请确认文件确实来自本仓库 Release 页面后，选择「更多信息 → 仍要运行」。
@@ -169,7 +169,7 @@
 ## 从源码运行
 
 ```powershell
-git clone https://github.com/Miyazawai/DSH-Melody-Launcher-Overture.git
+git clone https://github.com/stone1524/DSH-Melody-Launcher-Overture.git
 cd DSH-Melody-Launcher-Overture
 npm install
 npm run dev           # 开发模式
@@ -205,7 +205,7 @@ npm run package:win   # 打包 Windows 便携 exe
 
 ## 联系与反馈
 
-- 问题反馈请开 [Issue](https://github.com/Miyazawai/DSH-Melody-Launcher-Overture/issues)，附上启动器版本与复现步骤
+- 问题反馈请开 [Issue](https://github.com/stone1524/DSH-Melody-Launcher-Overture/issues)，附上启动器版本与复现步骤
 
 ---
 
