@@ -42,7 +42,7 @@ import { readPluginReceipts, recordPluginInstall } from './plugin-receipts'
 import { approveAllIgnoredBuilds } from './plugin-install'
 import { configureProcessTracker, shutdownTrackedProcesses, withExecutableDirectoryOnPath } from './process'
 import { createProcessSupervisor, type ProcessSupervisor } from './process-supervisor'
-import { readProfile, reorderPlugins, togglePlugin } from './profile'
+import { isSafePackageName, readProfile, reorderPlugins, togglePlugin } from './profile'
 import { createRecommendedWebUiService, type RecommendedWebUiService } from './recommended-web-ui'
 import { consolidatePluginPool, createProfileService, ensureProfileWorkspaceConfig, migrateLegacyPacks, type ProfileService } from './profile-service'
 import { installPresetFromDirectory } from './preset-install'
@@ -320,6 +320,9 @@ function createServices(): Services {
           continue
         }
         for (const packageName of missing) {
+          // 依赖名来自本机/导入包的 package.json，属不可信输入；不合法的名字
+          // 不允许进 sharedSource 路径拼接（`..` 段可越出插件体目录）。
+          if (!isSafePackageName(packageName)) continue
           if (sourceSpecs.has(packageName)) continue
           const candidate = siblingManifest.dependencies?.[packageName]
           if (typeof candidate !== 'string' || candidate.trim() === '' || candidate.trim() === '*') continue

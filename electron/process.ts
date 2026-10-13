@@ -127,7 +127,9 @@ export function spawnCommand(
   const environment = withExecutableDirectoryOnPath(executable, options.env)
   const isWindowsBatch = process.platform === 'win32' && /\.(?:cmd|bat)$/i.test(executable)
   if (isWindowsBatch) {
-    const commandInterpreter = environment.ComSpec || process.env.ComSpec || 'cmd.exe'
+    // 解释器是启动器自己的工具选择：只认本进程环境的 ComSpec，
+    // 不读传给子进程的 environment（那里面可能有来自整合包配置的键）。
+    const commandInterpreter = process.env.ComSpec || 'cmd.exe'
     return trackSpawnedProcess(spawn(commandInterpreter, [
       '/d',
       '/s',

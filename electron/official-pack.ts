@@ -34,7 +34,9 @@ const OFFICIAL_PACK_ASSET_RE = /^official-pack-v(.+)\.zip$/
 const RELEASE_BODY_DSH_RE = /(?:^|\n)\s*dsh\s*[:：]\s*(\S+)/i
 
 export function officialPackAssetName(version: string = OFFICIAL_PACK_VERSION): string {
-  return `official-pack-v${version}.zip`
+  // version 来自远端 Release 元数据，进文件名前先消毒，防 `..\` 越出下载目录。
+  const safeVersion = version.replace(/[^0-9A-Za-z._+-]/g, '_')
+  return `official-pack-v${safeVersion}.zip`
 }
 
 export function officialPackDisplayName(version: string = OFFICIAL_PACK_VERSION): string {

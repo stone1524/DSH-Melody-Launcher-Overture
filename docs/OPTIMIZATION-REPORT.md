@@ -1,9 +1,9 @@
 # Agent Hub 优化报告（v1.0.3 → v1.0.4）
 
 - 日期：2026-10-13
-- 范围：交付体积、依赖治理、构建配置与 CI、代码质量抽查
+- 范围：交付体积、依赖治理、构建配置与 CI、代码质量抽查、深度安全扫描分诊
 - 基线：`E:\agent-hub-build`（2026-10-16:46 产物）；源码 `E:\agent hub\agent-launcher`
-- 检查方式：全量 vitest + tsc --noEmit + app.asar 解包分析 + win-unpacked 体积画像 + 构建/CI 配置审查 + 源码引用追踪
+- 检查方式：全量 vitest + tsc --noEmit + app.asar 解包分析 + win-unpacked 体积画像 + 构建/CI 配置审查 + 源码引用追踪 + Mimosa 深度安全扫描（分诊结论见 [SECURITY-SCAN-TRIAGE.md](SECURITY-SCAN-TRIAGE.md)：433 条发现 → 3 项真实修复，其余为误报/已防护/设计固有）
 
 ## 基线状态（优化前）
 
@@ -81,6 +81,16 @@
 - [x] 新 portable exe 启动验证：electron 进程带 "Agent Hub" 主窗口正常出现，验证后关闭
 - [x] asar 复检：仅含 dist / dist-electron / package.json，零 node_modules、零 sourcemap、零 demo chunk
 - [x] 旧 Agent-Hub-1.0.3-portable.exe 已按约定清除
+
+### P4 安全扫描类（Mimosa deep，433 条发现，详见 SECURITY-SCAN-TRIAGE.md）
+
+| # | 状态 | 问题 | 证据 | 处理 |
+| --- | --- | --- | --- | --- |
+| 21 | ✅ | 子进程环境可决定批处理解释器（ComSpec） | process.ts:130 原取 `environment.ComSpec` | 只认启动器自身环境的 ComSpec |
+| 22 | ✅ | 导入包依赖名未过白名单即进路径拼接（`..` 段写入原语） | main.ts fillMissingDependencies 循环 | `isSafePackageName` 门禁，非法名跳过 |
+| 23 | ✅ | 远端 Release version 未消毒直拼下载文件名 | official-pack.ts officialPackAssetName | 与 installer.ts 同款字符消毒 |
+| 24 | 📋 | 扫描范围含 dist/dist-electron 编译产物与捆绑库，产生 307+ 条 addLocalFile 误报 | main.js:1657 为 adm-zip 库压缩代码 | 建议后续配置忽略构建输出目录 |
+| 25 | 📋 | 覆盖状态 partial：动态派发调用图不完整 | coverage.json gaps | 如需更强保证补运行时验证 |
 
 ## 改动文件清单
 
