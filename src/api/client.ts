@@ -19,9 +19,12 @@ export async function bootstrapLauncherApi(): Promise<LauncherApi> {
     resolved = window.launcher
     return resolved
   }
-  const { demoApi } = await import('../demo-api')
-  resolved = demoApi
-  return resolved
+  if (import.meta.env.DEV) {
+    const { demoApi } = await import('../demo-api')
+    resolved = demoApi
+    return resolved
+  }
+  throw new Error('渲染层 API 不可用：preload 未注入 window.launcher。')
 }
 
 export function resolveLauncherApi(): LauncherApi {

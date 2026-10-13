@@ -2,6 +2,23 @@
 
 本文件记录 DSH 旋律启动器（dsh-melody-launcher）的版本变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本语义遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [v1.0.4] - 2026-10-13 — 安装包瘦身 20MB+ · 新增传统安装器 · 依赖治理
+
+全部改动的证据链与逐项收益见 [docs/OPTIMIZATION-REPORT.md](docs/OPTIMIZATION-REPORT.md)。
+
+### 变更
+
+- **安装包瘦身约 20MB**：app.asar 里一直打包着整套生产依赖 node_modules（解包实测 42MB），而 vite 早已把所有依赖打进 dist/dist-electron——两份携带。现在生产依赖清空、全部移入 devDependencies，asar 从 37MB 缩到 7MB 级。其中两个包干脆是死的：koffi（window-shadow 早已改纯 CSS 实现，源码零引用）和 react-markdown/remark-gfm（全项目零引用，却拖着整棵 unified 树）。生产构建不再产出 sourcemap（dist 里 1.6MB），2182 行的浏览器演示 mock（demo-api）只在 dev 构建可达，不再进生产包。
+- **只带用得上的语言包**：之前随包带 55 种语言共 47MB，现在 `electronLanguages` 只留 en-US / zh-CN / zh-TW。
+- **启用最高压缩**：electron-builder `compression: "maximum"`，portable 与安装器同步受益。
+- **新增传统安装器**：除了 portable，现在同时产出 NSIS 安装器 `Agent-Hub-1.0.4-setup.exe`（辅助式安装、可选安装目录、per-user 免管理员、自动建桌面与开始菜单快捷方式）。portable 每次启动要把全部文件解压到 %TEMP%，慢且易被杀软误报；装进机器的版本没有这个问题。CI 与 `npm run package:win` 跟随配置同时产出两种 exe。
+- **win-unpacked 剥离 20MB 的 LICENSES.chromium.html**（afterPack 钩子）：纯许可文本，运行无关；商用分发前建议恢复（见报告）。
+- **仓库元数据归位**：package.json 的 repository/homepage 从上游 rirko 仓库改为本 fork；CI artifact 更名 `Agent-Hub-artifacts`；README 测试徽标 933 → 953。
+
+### 修复
+
+- 无行为修复，本版为纯优化版本：953 项测试与 tsc 在改动前后均全绿。
+
 ## [v1.0.3] - 2026-10-05 — 装完插件不再拖死整机 · web 包起得来 · 官方桌面端也管
 
 ### 新增功能

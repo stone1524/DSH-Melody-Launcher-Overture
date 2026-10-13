@@ -1,6 +1,6 @@
 {
   "name": "dsh-launcher",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "A local desktop launcher and plugin organizer for DeepSeek Harness.",
   "keywords": [
@@ -14,9 +14,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rirko/dsh-melody-launcher.git"
+    "url": "git+https://github.com/Miyazawai/DSH-Melody-Launcher-Overture.git"
   },
-  "homepage": "https://github.com/rirko/dsh-melody-launcher#readme",
+  "homepage": "https://github.com/Miyazawai/DSH-Melody-Launcher-Overture#readme",
   "engines": {
     "node": ">=20"
   },
@@ -30,21 +30,9 @@
     "pack:official": "vite-node scripts/build-official-pack.mts",
     "build:offline-packs": "vite-node scripts/build-offline-packs.mts",
     "fetch:runtimes": "vite-node scripts/fetch-node-runtime.mts",
-    "package:win": "npm run build && electron-builder --win portable"
+    "package:win": "npm run build && electron-builder --win"
   },
-  "dependencies": {
-    "@xmldom/xmldom": "^0.8.14",
-    "adm-zip": "^0.6.0",
-    "koffi": "^3.1.5",
-    "lucide-react": "^1.31.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1",
-    "yaml": "^2.9.0",
-    "yauzl": "^3.4.0",
-    "yazl": "^3.3.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",
     "@types/node": "^26.2.0",
@@ -53,33 +41,46 @@
     "@types/yauzl": "^3.4.0",
     "@types/yazl": "^3.3.1",
     "@vitejs/plugin-react": "^6.0.5",
+    "@xmldom/xmldom": "^0.8.14",
+    "adm-zip": "^0.6.0",
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3",
     "jsdom": "^27.4.0",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
     "vite-node": "^6.0.0",
     "vite-plugin-electron": "^1.1.1",
     "vite-plugin-electron-renderer": "^1.0.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "yaml": "^2.9.0",
+    "yauzl": "^3.4.0",
+    "yazl": "^3.3.1"
   },
   "build": {
     "appId": "com.local.dshlauncher",
     "productName": "Agent Hub",
     "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US",
+      "zh-CN",
+      "zh-TW"
+    ],
+    "afterPack": "scripts/after-pack.cjs",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
+      "!dist/**/*.map",
+      "!dist-electron/**/*.map",
       "package.json"
     ],
     "extraResources": [
-      {
-        "from": "node_modules/@koromix/koffi-win32-x64/win32_x64",
-        "to": "koffi/win32_x64"
-      },
       {
         "from": "offline-packs",
         "to": "offline-packs",
@@ -92,9 +93,20 @@
     "win": {
       "icon": "build/icon.ico",
       "target": [
-        "portable"
+        "portable",
+        "nsis"
       ],
       "artifactName": "Agent-Hub-${version}-portable.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Agent Hub",
+      "artifactName": "Agent-Hub-${version}-setup.${ext}"
     }
   }
 }

@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Package portable exe
+      - name: Package Windows executables
         run: npm run package:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,7 +41,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DSH-Launcher-portable
+          name: Agent-Hub-artifacts
           path: release/*.exe
           if-no-files-found: error
 

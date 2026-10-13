@@ -39,7 +39,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      sourcemap: true,
+      // 生产产物不带 sourcemap：终端用户用不到，还让 asar 膨胀并暴露源码结构。
+      sourcemap: false,
     },
   }
 })
