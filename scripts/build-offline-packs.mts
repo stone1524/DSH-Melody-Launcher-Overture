@@ -7,6 +7,7 @@
 // 用法：npm run build:offline-packs
 // 需要网络（npmmirror）。产物写入项目根 offline-packs/，随 electron-builder 分发。
 
+import { existsSync } from 'node:fs'
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -34,8 +35,15 @@ async function main(): Promise<void> {
   const { runCommand } = await import('../electron/command')
   const scratch = await mkdtemp(path.join(tmpdir(), 'offline-packs-'))
   const outcomes: PackOutcome[] = []
+  // 可选过滤：npm run build:offline-packs -- codex  （只重打指定工具，其余离线包原样保留）
+  const only = new Set(process.argv.slice(2).filter(arg => !arg.startsWith('-')))
+  const agents = only.size > 0 ? NPM_AGENTS.filter(agent => only.has(agent.id)) : NPM_AGENTS
+  if (only.size > 0 && agents.length === 0) {
+    console.error(`[offline-packs] -- 后面的 id 都不认识：${[...only].join(', ')}。可选：${NPM_AGENTS.map(agent => agent.id).join(', ')}`)
+    process.exit(1)
+  }
 
-  for (const agent of NPM_AGENTS) {
+  for (const agent of agents) {
     const prefix = path.join(scratch, agent.id, 'prefix')
     await mkdir(path.join(prefix, 'node_modules'), { recursive: true })
     console.log(`[offline-packs] 安装 ${agent.pkg} …`)
@@ -102,20 +110,34 @@ async function main(): Promise<void> {
     console.log('[offline-packs] zcode/ 目录不存在，未内置 ZCode 桌面端。')
   }
 
-  const manifest = {
+  // manifest 合并语义：过滤重打时保留未重打包工具的既有登记。
+  const manifestPacks: Record<string, { version?: string; builtAt?: string }> = {}
+  try {
+    const existing = JSON.parse(await readFile(path.join(OUT_ROOT, 'manifest.json'), 'utf8')) as { packs?: Record<string, { version?: string; builtAt?: string }> }
+    Object.assign(manifestPacks, existing.packs ?? {})
+  } catch {
+    // 首次生成没有旧 manifest，正常。
+  }
+  for (const outcome of outcomes) {
+    manifestPacks[outcome.id] = { version: outcome.version ?? undefined, builtAt: new Date().toISOString() }
+  }
+  const manifest: Record<string, unknown> = {
     generatedAt: new Date().toISOString(),
     registry: REGISTRY,
     dshNote: `DSH 依赖树大（${DSH_PACKAGE_NAME} 82+ 依赖、含 116MB LibreOffice 组件），走 npmmirror 国内直连，不内置离线包。`,
-    packs: Object.fromEntries(outcomes.map(outcome => [outcome.id, { version: outcome.version, builtAt: new Date().toISOString() }]))
-    // zcode 有安装器时才登记。
-    ,
-  } as Record<string, unknown>
+    packs: manifestPacks,
+  }
+  // 磁盘上 zip 已被删掉的工具，登记同步移除（保持 manifest 与实物一致）。
+  for (const id of Object.keys(manifestPacks)) {
+    if (id === 'zcode') continue
+    if (!existsSync(path.join(OUT_ROOT, id, 'pack.zip'))) delete manifestPacks[id]
+  }
   if (zcodeVersion) {
-    ;(manifest.packs as Record<string, unknown>).zcode = { version: zcodeVersion, builtAt: new Date().toISOString() }
+    manifestPacks.zcode = { version: zcodeVersion, builtAt: new Date().toISOString() }
   }
   await mkdir(OUT_ROOT, { recursive: true })
   await writeFile(path.join(OUT_ROOT, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
-  console.log(`[offline-packs] manifest.json 已生成（${outcomes.length} 个 npm 包${zcodeVersion ? ' + zcode 桌面端' : ''}）。`)
+  console.log(`[offline-packs] manifest.json 已更新（${Object.keys(manifestPacks).length} 项在册）。`)
   await rm(scratch, { recursive: true, force: true }).catch(() => undefined)
 }
 

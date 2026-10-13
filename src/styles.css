@@ -729,6 +729,117 @@ input:focus-visible {
 .agent-cli-test-ok { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
 .agent-cli-test-fail { background: var(--danger-soft); color: var(--danger); }
 
+/* ===== 首页「Agent 速装」网格：六工具与 DSH 平级露出 ===== */
+.agent-quick {
+  flex: none;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.agent-quick-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.agent-quick-more {
+  display: inline-flex;
+  margin-left: auto;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agent-quick-error {
+  margin: 0 0 8px;
+  color: var(--danger);
+  font-size: 11.5px;
+}
+
+.agent-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agent-quick-card {
+  position: relative;
+  display: grid;
+  padding: 9px 84px 9px 11px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  text-align: left;
+  cursor: pointer;
+  gap: 3px;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+
+.agent-quick-card:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.agent-quick-card.installed {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.agent-quick-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.agent-quick-offline {
+  padding: 1px 5px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.agent-quick-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--quiet);
+  font-size: 11px;
+}
+
+.agent-quick-card.installed .agent-quick-state { color: var(--accent); }
+
+.agent-quick-install {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  padding: 3px 10px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.agent-quick-install:hover {
+  color: #fff;
+  background: var(--accent);
+}
+
 /* ===== macOS 式交互动效 ===== */
 .home-tab-pane,
 .view-pane {

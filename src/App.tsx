@@ -163,7 +163,6 @@ function LauncherShell() {
                     onUpdateDsh={() => { void store.updateDsh() }}
                     onOpenLauncherUpdate={() => setUpdateOpen(true)}
                     onNavigateTab={navigation.goHome}
-                    onOpenSettings={() => setSettingsOpen(true)}
                   />
                 ) : tab === 'agents' ? (
                   <Suspense fallback={null}>
