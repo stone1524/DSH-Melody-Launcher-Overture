@@ -1,7 +1,7 @@
 export type WindowMode = 'launcher' | 'manager'
 /** 一级导航 tab：启动页 + 五个 C 端面板（原二级设置页拍平）。顺序与显示名见 src/lib/nav.ts。 */
 export type HomeTab = 'start' | 'versions' | 'plugins' | 'skills' | 'presets' | 'packs'
-export type UiTheme = 'deepseek' | 'night'
+export type UiTheme = 'deepseek' | 'night' | 'macos' | 'macos-dark'
 
 export interface AppSettings {
   dshInstallPath: string

@@ -42,14 +42,14 @@ export function defaultSettings(input: DefaultSettingsInput): AppSettings {
     launchArgs: ['--yes', DSH_PACKAGE_NAME, 'web'],
     webPort: 3080,
     openAfterLaunch: true,
-    uiTheme: 'deepseek',
+    uiTheme: 'macos',
     aiDeveloperMode: false,
     aiPrompt: '',
     recommendedWebUiPrompted: false,
   }
 }
 
-const UI_THEMES = new Set<UiTheme>(['deepseek', 'night'])
+const UI_THEMES = new Set<UiTheme>(['deepseek', 'night', 'macos', 'macos-dark'])
 
 function validUiTheme(value: unknown): value is UiTheme {
   return typeof value === 'string' && UI_THEMES.has(value as UiTheme)

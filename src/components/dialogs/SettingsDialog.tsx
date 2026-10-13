@@ -18,8 +18,10 @@ interface SettingsDialogProps {
 }
 
 const UI_THEMES: Array<{ id: UiTheme; label: string }> = [
-  { id: 'deepseek', label: '日间' },
-  { id: 'night', label: '夜间' },
+  { id: 'macos', label: 'macOS 日间' },
+  { id: 'macos-dark', label: 'macOS 夜间' },
+  { id: 'deepseek', label: '经典日间' },
+  { id: 'night', label: '经典夜间' },
 ]
 
 /** 下拉里代表「手填地址」的哨兵值，不会真的存进设置。 */

@@ -2,7 +2,7 @@ import { Layers3, LoaderCircle } from 'lucide-react'
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { LauncherApiProvider, resolveLauncherApi, useLauncherApi } from './api/client'
 import { LauncherHome } from './components/LauncherHome'
-import { TopBar } from './components/TopBar'
+import { Sidebar } from './components/Sidebar'
 import { Toast } from './components/Toast'
 import { DshFailureDialog } from './components/dialogs/DshFailureDialog'
 import { SettingsDialog } from './components/dialogs/SettingsDialog'
@@ -99,6 +99,7 @@ function LauncherShell() {
 
   const closeWindow = () => void api.closeWindow()
   const minimizeWindow = () => void api.minimizeWindow()
+  const toggleMaximizeWindow = () => void api.toggleMaximizeWindow()
 
   /** 「导入整合包」：选文件 → analyze 拿预览 → PackInstallDialog 展示 preview 态。 */
   const handlePackImport = async () => {
@@ -122,12 +123,14 @@ function LauncherShell() {
 
   return (
     <div className="app-root">
-      <TopBar
+      <Sidebar
         activeTab={navigation.homeTab}
         openWebVisible={store.runtime.running && Boolean(store.runtime.url)}
         onSelectTab={navigation.goHome}
         onOpenHarness={openHarness}
+        onOpenSettings={() => setSettingsOpen(true)}
         onMinimize={minimizeWindow}
+        onToggleMaximize={toggleMaximizeWindow}
         onClose={closeWindow}
       />
       <div className="app-content">

@@ -1,6 +1,12 @@
 // 主进程与渲染进程共享的常量。
 // 与 types.ts 一样，这个文件是两侧的公共契约 —— 任何一侧单独持有副本都会随时间漂移。
 
+/**
+ * 本 fork（Agent Hub Edition）的界面品牌名。集中一处便于后续定名：
+ * 侧栏品牌区、加载态等界面位置统一从这里取。
+ */
+export const APP_BRAND_NAME = 'Agent Launcher'
+
 /** DSH 本体的 GitHub 仓库。出现在插件列表中时按本体而非普通插件处理。 */
 export const DSH_REPOSITORY = 'deepseek-ai/deepseek-harness'
 

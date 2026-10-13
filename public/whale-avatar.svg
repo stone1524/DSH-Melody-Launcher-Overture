@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="二创小鲸鱼头像">
+  <defs>
+    <linearGradient id="whale-body" x1="18" y1="30" x2="104" y2="106" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b8cff"/>
+      <stop offset="1" stop-color="#6f5bff"/>
+    </linearGradient>
+    <linearGradient id="whale-fin" x1="30" y1="84" x2="52" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4a6fe8"/>
+      <stop offset="1" stop-color="#5b4fe0"/>
+    </linearGradient>
+    <linearGradient id="whale-tail" x1="92" y1="56" x2="118" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b8cff"/>
+      <stop offset="1" stop-color="#6a52f2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 底部投影 -->
+  <ellipse cx="62" cy="110" rx="38" ry="7" fill="#2b3a8f" opacity="0.14"/>
+
+  <!-- 尾鳍（两瓣，右后方） -->
+  <path d="M92 76 C104 70 110 60 112 50 C116 58 118 66 114 74 C120 74 124 78 126 84 C118 88 108 90 100 86 C96 84 93 80 92 76 Z" fill="url(#whale-tail)"/>
+
+  <!-- 身体：大头圆润 blob，右端收窄接尾巴 -->
+  <path d="M22 74 C22 50 38 34 60 34 C82 34 96 50 96 72 C96 90 80 102 58 102 C38 102 22 92 22 74 Z" fill="url(#whale-body)"/>
+
+  <!-- 肚皮 -->
+  <path d="M32 84 C36 96 48 102 60 102 C72 102 82 96 86 86 C78 92 68 94 58 94 C46 94 38 90 32 84 Z" fill="#dce6ff" opacity="0.9"/>
+
+  <!-- 左侧胸鳍 -->
+  <path d="M34 84 C30 92 32 100 38 104 C44 100 46 92 44 85 C41 83 37 83 34 84 Z" fill="url(#whale-fin)"/>
+
+  <!-- 头顶喷水：中间水柱 + 两侧水珠 -->
+  <path d="M57 30 C56 22 52 18 46 16 C53 16 57 19 59 24 C60 19 64 15 70 13 C66 18 64 23 64 29 Z" fill="#9db9ff"/>
+  <circle cx="44" cy="12" r="3.2" fill="#9db9ff"/>
+  <circle cx="73" cy="9" r="2.6" fill="#b7ccff"/>
+  <circle cx="38" cy="20" r="2.2" fill="#b7ccff"/>
+
+  <!-- 眼睛（大圆点 + 高光） -->
+  <circle cx="46" cy="64" r="5" fill="#1e2a5e"/>
+  <circle cx="70" cy="64" r="5" fill="#1e2a5e"/>
+  <circle cx="47.8" cy="62.2" r="1.7" fill="#ffffff"/>
+  <circle cx="71.8" cy="62.2" r="1.7" fill="#ffffff"/>
+
+  <!-- 腮红 -->
+  <ellipse cx="36" cy="74" rx="5" ry="3" fill="#ff9fb2" opacity="0.65"/>
+  <ellipse cx="80" cy="74" rx="5" ry="3" fill="#ff9fb2" opacity="0.65"/>
+
+  <!-- 微笑 -->
+  <path d="M53 75 C56 78.5 61 78.5 64 75" stroke="#1e2a5e" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+</svg>
