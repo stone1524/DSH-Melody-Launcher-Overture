@@ -97,10 +97,15 @@ export function AgentToolsView() {
                 <span className="agent-cli-audience">{definition.audience}</span>
                 {record && (
                   <span className="agent-cli-status-line">
-                    {providerLabel
-                      ? <><Check size={12} /> 已配置 {providerLabel}</>
-                      : definition.configurable ? '已安装，还没配置模型' : '已安装'}
+                    {record.source === 'raw-installer'
+                      ? <><Check size={12} /> 官方安装向导已启动，请在向导中完成安装</>
+                      : providerLabel
+                        ? <><Check size={12} /> 已配置 {providerLabel}</>
+                        : definition.configurable ? '已安装，还没配置模型' : '已安装'}
                   </span>
+                )}
+                {record?.source === 'offline-bundle' && (
+                  <span className="agent-cli-offline-badge">内置离线包 · 安装全程无需联网</span>
                 )}
               </div>
               <div className="settings-row-actions">
@@ -116,13 +121,18 @@ export function AgentToolsView() {
                                 <KeyRound size={14} />{providerLabel ? '重新配置' : '配置模型'}
                               </button>
                             )}
+                            {definition.installKind === 'raw-installer'
+                              ? <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => void act(`install:${definition.id}`, () => api.agentCliInstall(definition.id).then(result => setLogTail(result.logTail)))}>
+                                <ExternalLink size={14} />再次运行安装向导
+                              </button>
+                              : null}
                             <button type="button" className="icon-button" title={`卸载 ${definition.name}`} aria-label={`卸载 ${definition.name}`} disabled={busy !== null} onClick={() => void act(`uninstall:${definition.id}`, () => api.agentCliUninstall(definition.id))}>
                               <Trash2 size={16} />
                             </button>
                           </>
                         )
                         : <button type="button" className="primary-command" disabled={busy !== null} onClick={() => void act(`install:${definition.id}`, () => api.agentCliInstall(definition.id).then(result => setLogTail(result.logTail)))}>
-                          <Wrench size={14} />安装
+                          <Wrench size={14} />{definition.installKind === 'raw-installer' ? '运行安装向导' : '安装'}
                         </button>}
                     </>
                   )}

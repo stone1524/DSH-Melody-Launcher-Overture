@@ -89,7 +89,10 @@ describe('agent-cli catalog', () => {
     expect(ids).toContain('hermes')
     for (const definition of AGENT_CLI_DEFINITIONS) {
       expect(definition.npmPackage).toMatch(/^[\w@][\w./-]*$/)
-      expect(definition.versionArgs.length).toBeGreaterThan(0)
+      // 直启安装器类（zcode 桌面端）没有 CLI 可验证，versionArgs 允许为空。
+      if (definition.installKind !== 'raw-installer') {
+        expect(definition.versionArgs.length).toBeGreaterThan(0)
+      }
       expect(['qwen-env', 'opencode-json', 'codex-config', 'hermes-env', 'none']).toContain(definition.configKind)
       // configurable 与 configKind 必须一致：none 就不能承诺向导化配置。
       expect(definition.configurable).toBe(definition.configKind !== 'none')

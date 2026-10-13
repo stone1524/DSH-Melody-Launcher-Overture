@@ -103,6 +103,17 @@ export const AGENT_CLI_DEFINITIONS: readonly AgentCliDefinition[] = [
     configurable: true,
     installKind: 'hermes-installer',
   },
+  {
+    id: 'zcode',
+    name: 'ZCode 桌面端',
+    tagline: 'ZCode 官方桌面应用；内置其官方安装器，无网络也能装',
+    audience: '想要图形界面而非命令行的用户；启动器拉起官方安装向导，安装过程由官方安装器完成。',
+    npmPackage: 'zcode-desktop',
+    versionArgs: [],
+    configKind: 'none',
+    configurable: false,
+    installKind: 'raw-installer',
+  },
 ] as const
 
 export function getAgentCliDefinition(id: string): AgentCliDefinition | null {

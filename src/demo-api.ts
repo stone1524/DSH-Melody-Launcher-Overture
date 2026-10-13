@@ -2169,6 +2169,7 @@ function agentCliDemoState(): AgentCliListResult {
       { definition: { id: 'openclaw', name: 'OpenClaw', tagline: '开源个人智能体框架', audience: '尝鲜用户', npmPackage: 'openclaw', versionArgs: ['--version'], configKind: 'none', configurable: false }, record: null },
       { definition: { id: 'codex', name: 'Codex CLI', tagline: 'OpenAI 开源命令行编程 Agent，可指向任意 OpenAI 兼容端点', audience: '想用 Codex 工作流但接国产模型', npmPackage: '@openai/codex', versionArgs: ['--version'], configKind: 'codex-config', configurable: true }, record: null },
       { definition: { id: 'hermes', name: 'Hermes Agent', tagline: 'Nous Research 开源智能体，中文社区提供国内安装镜像', audience: '进阶玩家', npmPackage: 'hermes-agent', versionArgs: ['--version'], configKind: 'hermes-env', configurable: true, installKind: 'hermes-installer' }, record: null },
+      { definition: { id: 'zcode', name: 'ZCode 桌面端', tagline: 'ZCode 官方桌面应用；内置其官方安装器，无网络也能装', audience: '想要图形界面而非命令行的用户', npmPackage: 'zcode-desktop', versionArgs: [], configKind: 'none', configurable: false, installKind: 'raw-installer' }, record: null },
     ],
     providers: [
       { id: 'deepseek', label: 'DeepSeek 开放平台', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', consoleUrl: 'https://platform.deepseek.com/' },

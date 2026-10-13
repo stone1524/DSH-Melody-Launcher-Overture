@@ -1247,7 +1247,7 @@ export interface DshMarketProgress {
 // ===== Agent CLI 工具（Agent Hub Edition 新增）=====
 
 /** 内置目录里的 Agent CLI id。 */
-export type AgentCliId = 'qwen-code' | 'opencode' | 'openclaw' | 'codex' | 'hermes'
+export type AgentCliId = 'qwen-code' | 'opencode' | 'openclaw' | 'codex' | 'hermes' | 'zcode'
 
 /**
  * 国产模型服务商预设（OpenAI 兼容端点）。
@@ -1284,8 +1284,8 @@ export interface AgentCliDefinition {
   configKind: 'qwen-env' | 'opencode-json' | 'codex-config' | 'hermes-env' | 'none'
   /** 是否支持在启动器内完成厂商配置。 */
   configurable: boolean
-  /** 安装通道；缺省 npm。hermes-installer = 中文社区官方 PowerShell 安装脚本。 */
-  installKind?: 'npm' | 'hermes-installer'
+  /** 安装通道；缺省 npm。hermes-installer = 中文社区官方 PowerShell 安装脚本；raw-installer = 内置官方安装器直启（如 ZCode 桌面端）。 */
+  installKind?: 'npm' | 'hermes-installer' | 'raw-installer'
 }
 
 /** agents.json 里的一条安装记录。 */
@@ -1297,6 +1297,8 @@ export interface AgentCliInstallRecord {
   updatedAt: string
   configuredProvider?: string
   configuredAt?: string
+  /** 安装来源：npm 在线镜像 / 内置离线包 / 官方安装器直启。缺省 npm。 */
+  source?: 'npm' | 'offline-bundle' | 'raw-installer'
 }
 
 /** 渲染层列表行：目录定义 + 本机状态合并视图。 */

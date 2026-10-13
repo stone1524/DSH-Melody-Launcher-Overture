@@ -80,6 +80,14 @@ const bundledPnpmRoot = app.isPackaged
   ? path.join(process.resourcesPath, 'pnpm')
   : path.resolve(moduleDirectory, '../vendor/pnpm')
 
+/**
+ * 内置离线包根：打包态随 extraResources 的 offline-packs/ 分发；开发态用项目根同名目录
+ * （scripts/build-offline-packs.mts 的产出位，目录恒存在，内含说明文件与可选的各工具包）。
+ */
+const offlinePacksRoot = app.isPackaged
+  ? path.join(process.resourcesPath, 'offline-packs')
+  : path.resolve(moduleDirectory, '../offline-packs')
+
 let mainWindow: BrowserWindow | null = null
 let processSupervisor: ProcessSupervisor | null = null
 let quitCleanupStarted = false
@@ -997,6 +1005,8 @@ function createServices(): Services {
     },
     readNpmRegistry: () => settings.read().then(value => value.network?.npmRegistry ?? null),
     onOutput: (level, text) => events.output('plugin', level, text),
+    // 内置离线包：打包态随资源目录分发，开发态用项目根的同名目录。
+    offlinePacksDir: offlinePacksRoot,
   })
 
   return { settings, pluginReceiptsPath, runtime, installer, launcherUpdater, pluginTrial, aiInstaller, copilot, packManager: packManager!, githubAuth, applicationAddons, catalogSync, dshMarket, desktopPlugins, recommendedWebUi, runtimeVersions, profiles: profileService, agentCli, profilePoolReady, restoreOfficialPack, listOfficialPackVersions: async () => listOfficialPackVersions(await officialListDeps()), readOfficialPackStatus: force => resolveOfficialPackStatus(force === true), installOfficialPackVersion, officialPackBootstrap }

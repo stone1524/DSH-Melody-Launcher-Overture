@@ -70,7 +70,7 @@ describe('agent-cli manager', () => {
   it('list 返回目录与 providers，未安装时 record 为空', async () => {
     const manager = createAgentCliManager(makeOptions())
     const result = await manager.list()
-    expect(result.entries.map(item => item.definition.id)).toEqual(['qwen-code', 'opencode', 'openclaw', 'codex', 'hermes'])
+    expect(result.entries.map(item => item.definition.id)).toEqual(['qwen-code', 'opencode', 'openclaw', 'codex', 'hermes', 'zcode'])
     expect(result.entries.every(item => item.record === null)).toBe(true)
     expect(result.providers.map(provider => provider.id)).toEqual(['deepseek', 'zhipu', 'qwen', 'kimi'])
   })
@@ -198,6 +198,53 @@ describe('agent-cli manager', () => {
     await manager.install('hermes')
     await manager.configure({ id: 'hermes', providerId: 'qwen', apiKey: 'sk-dash' })
     expect(envCalls).toEqual([{ name: 'DASHSCOPE_API_KEY', value: 'sk-dash' }])
+  })
+
+  it('离线包存在时优先解压安装（零网络），损坏时回退在线镜像', async () => {
+    // 造一个真实 zip：与 stubRunner 伪造的安装结果同构（node_modules/<pkg>/bin/cli.js）。
+    const AdmZip = (await import('adm-zip')).default
+    const packsDir = path.join(dir, 'offline-packs', 'codex')
+    await mkdir(packsDir, { recursive: true })
+    const zip = new AdmZip()
+    const pkgRoot = 'node_modules/@openai/codex'
+    zip.addFile(`${pkgRoot}/package.json`, JSON.stringify({ name: '@openai/codex', version: '7.7.7', bin: { codex: 'bin/cli.js' } }))
+    zip.addFile(`${pkgRoot}/bin/cli.js`, 'console.log("7.7.7")')
+    zip.writeZip(path.join(packsDir, 'pack.zip'))
+    await writeFile(path.join(dir, 'offline-packs', 'manifest.json'), JSON.stringify({ packs: { codex: { version: '7.7.7' } } }), 'utf8')
+
+    const state: StubState = { calls: [], installSucceeds: true, verifySucceeds: true, versionOutput: '7.7.7' }
+    const manager = createAgentCliManager(makeOptions({ runCommand: stubRunner(state), offlinePacksDir: path.join(dir, 'offline-packs') }))
+    const { entry, logTail } = await manager.install('codex')
+
+    expect(entry.record?.version).toBe('7.7.7')
+    expect(entry.record?.source).toBe('offline-bundle')
+    expect(logTail.length).toBeGreaterThan(0)
+    // 离线通道不应该碰 npm install。
+    expect(state.calls.some(call => call.args.includes('install'))).toBe(false)
+  })
+
+  it('zcode 桌面端：直启内置官方安装器（注入点验证），无安装器时报错', async () => {
+    const state: StubState = { calls: [], installSucceeds: true, verifySucceeds: true, versionOutput: '1.0.0' }
+    const launched: string[] = []
+    const packsDir = path.join(dir, 'offline-packs')
+    // 没有内置安装器：明确报错。
+    const manager1 = createAgentCliManager(makeOptions({
+      runCommand: stubRunner(state),
+      offlinePacksDir: packsDir,
+      runRawInstaller: exePath => { launched.push(exePath) },
+    }))
+    await expect(manager1.install('zcode')).rejects.toThrow(/未内置/)
+
+    // 放入安装器后：拉起并记录 manifest 版本。
+    const zcodeDir = path.join(packsDir, 'zcode')
+    await mkdir(zcodeDir, { recursive: true })
+    await writeFile(path.join(zcodeDir, 'ZCode-Setup-3.5.0.exe'), 'MZ-fake')
+    await writeFile(path.join(packsDir, 'manifest.json'), JSON.stringify({ packs: { zcode: { version: '3.5.0' } } }), 'utf8')
+    const result = await manager1.install('zcode')
+    expect(launched).toHaveLength(1)
+    expect(launched[0].toLowerCase()).toContain('zcode-setup-3.5.0.exe')
+    expect(result.entry.record?.source).toBe('raw-installer')
+    expect(result.entry.record?.version).toBe('3.5.0')
   })
 
   it('testProvider 按状态码给出可读原因，网络异常转中文提示', async () => {

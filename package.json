@@ -28,6 +28,7 @@
     "test": "vitest run",
     "preview": "vite preview --host 127.0.0.1",
     "pack:official": "vite-node scripts/build-official-pack.mts",
+    "build:offline-packs": "vite-node scripts/build-offline-packs.mts",
     "fetch:runtimes": "vite-node scripts/fetch-node-runtime.mts",
     "package:win": "npm run build && electron-builder --win portable"
   },
@@ -78,6 +79,13 @@
       {
         "from": "node_modules/@koromix/koffi-win32-x64/win32_x64",
         "to": "koffi/win32_x64"
+      },
+      {
+        "from": "offline-packs",
+        "to": "offline-packs",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {

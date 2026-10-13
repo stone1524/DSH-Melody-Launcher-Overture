@@ -5,9 +5,11 @@
 // 运行时依赖全部注入（node 解析器、命令执行器、fetch），测试用替身。
 
 import { mkdirSync } from 'node:fs'
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { existsSync, readFileSync } from 'node:fs'
+import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import AdmZip from 'adm-zip'
 import type {
   AgentCliConfigureRequest,
   AgentCliEntry,
@@ -61,6 +63,10 @@ export interface AgentCliManagerOptions {
   fetchImpl?: typeof fetch
   /** 覆盖用户主目录（测试注入）。 */
   homeDir?: string
+  /** 内置离线包目录（打包后 process.resourcesPath/offline-packs，开发态项目根/offline-packs）。 */
+  offlinePacksDir?: string
+  /** 官方安装器直启的注入点（测试替身）；缺省 spawnCommand 拉起后不等待。 */
+  runRawInstaller?: (installerPath: string) => void
   now?: () => Date
 }
 
@@ -323,6 +329,81 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
     return { version, logLines }
   }
 
+  /** 内置离线包清单：offline-packs/manifest.json。 */
+  interface OfflinePackManifest {
+    packs: Record<string, { version?: string; builtAt?: string }>
+  }
+
+  function readOfflineManifest(): OfflinePackManifest {
+    if (!options.offlinePacksDir) return { packs: {} }
+    try {
+      const raw = readFileSync(path.join(options.offlinePacksDir, 'manifest.json'), 'utf8')
+      const parsed = JSON.parse(raw) as OfflinePackManifest
+      return parsed && typeof parsed === 'object' && parsed.packs ? parsed : { packs: {} }
+    } catch {
+      return { packs: {} }
+    }
+  }
+
+  /** 内置离线包通道：解压构建期打好的前缀快照到私有前缀，零网络安装。 */
+  async function installViaOfflineBundle(definition: { id: AgentCliId; name: string; npmPackage: string; versionArgs: string[] }): Promise<{ version: string | null; logLines: string[]; source: 'offline-bundle' } | null> {
+    if (!options.offlinePacksDir) return null
+    const zipPath = path.join(options.offlinePacksDir, definition.id, 'pack.zip')
+    if (!existsSync(zipPath)) return null
+    const logLines: string[] = []
+    options.onOutput?.('info', `${definition.name}：发现内置离线包，直接解压安装（无需联网）…`)
+    try {
+      const prefix = prefixDir()
+      await mkdir(prefix, { recursive: true })
+      // zip 内容以 node_modules/ 为根（构建脚本保证）；解压覆盖旧版本文件。
+      new AdmZip(zipPath).extractAllTo(prefix, true)
+      const binJs = await resolveBinJs(prefix, definition.npmPackage)
+      const runtime = await options.resolveNode()
+      const verify = await runner({
+        executable: runtime.node,
+        args: [binJs, ...definition.versionArgs],
+        env: childEnv({ npm_config_prefix: prefix }),
+        timeoutMs: VERIFY_TIMEOUT_MS,
+      })
+      logLines.push(verify.output)
+      if (verify.exitCode !== 0) {
+        throw new AgentCliError(`离线包解压完成但验证失败（退出码 ${verify.exitCode}）。将回退在线安装。`)
+      }
+      const manifestVersion = readOfflineManifest().packs[definition.id]?.version ?? null
+      return { version: manifestVersion, logLines, source: 'offline-bundle' }
+    } catch (error) {
+      // 离线包损坏/平台不匹配时回退在线：不能因为内置包坏掉就把用户堵死。
+      const message = error instanceof Error ? error.message : String(error)
+      options.onOutput?.('error', `${definition.name} 内置离线包安装失败（${message}），改走在线镜像。`)
+      return null
+    }
+  }
+
+  /** 官方安装器直启通道（ZCode 桌面端）：拉起内置的官方安装向导，过程由客户在向导里完成。 */
+  async function installViaRawInstaller(definition: { id: AgentCliId; name: string }): Promise<{ version: string | null; logLines: string[] }> {
+    if (!options.offlinePacksDir) throw new AgentCliError('未内置离线安装包。')
+    const dir = path.join(options.offlinePacksDir, definition.id)
+    let installerPath: string | null = null
+    try {
+      const entries = await readdir(dir)
+      installerPath = entries.find(name => name.toLowerCase().endsWith('.exe')) ?? null
+      if (installerPath) installerPath = path.join(dir, installerPath)
+    } catch {
+      installerPath = null
+    }
+    if (!installerPath) {
+      throw new AgentCliError(`${definition.name} 的离线安装包未内置（offline-packs 目录里没有安装器）。请联网到官方渠道下载。`)
+    }
+    options.onOutput?.('info', `${definition.name}：正在打开官方安装向导，请在弹出的窗口中完成安装…`)
+    const launch = options.runRawInstaller ?? ((exe: string) => {
+      void import('../process').then(({ spawnCommand }) => spawnCommand(exe, [], { cwd: path.dirname(exe), env: { ...process.env } }))
+    })
+    launch(installerPath)
+    const manifestVersion = readOfflineManifest().packs[definition.id]?.version ?? null
+    const logLines = [`已启动官方安装器：${path.basename(installerPath)}`]
+    return { version: manifestVersion, logLines }
+  }
+
   return {
     async list() {
       return listResult()
@@ -332,9 +413,34 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
       const definition = getAgentCliDefinition(id)
       if (!definition) throw new AgentCliError('未知的 Agent CLI。')
       options.onOutput?.('info', `开始安装 ${definition.name}…`)
-      const { version, logLines } = definition.installKind === 'hermes-installer'
-        ? await installViaHermesInstaller(definition)
-        : await installViaNpm(definition)
+
+      // 通道选择：内置安装器直启 → 内置离线包解压（失败自动回退）→ 在线镜像。
+      let version: string | null = null
+      let logLines: string[] = []
+      let source: 'npm' | 'offline-bundle' | 'raw-installer' = 'npm'
+      if (definition.installKind === 'raw-installer') {
+        const outcome = await installViaRawInstaller(definition)
+        version = outcome.version
+        logLines = outcome.logLines
+        source = 'raw-installer'
+      } else if (definition.installKind !== 'hermes-installer') {
+        const bundled = await installViaOfflineBundle(definition)
+        if (bundled) {
+          version = bundled.version
+          logLines = bundled.logLines
+          source = 'offline-bundle'
+        } else {
+          const outcome = await installViaNpm(definition)
+          version = outcome.version
+          logLines = outcome.logLines
+          source = 'npm'
+        }
+      } else {
+        const outcome = await installViaHermesInstaller(definition)
+        version = outcome.version
+        logLines = outcome.logLines
+        source = 'npm'
+      }
 
       const now = nowIso(options)
       const existing = (await entryFor(id)).record
@@ -343,10 +449,13 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
         version,
         installedAt: existing?.installedAt ?? now,
         updatedAt: now,
+        source,
         ...(existing?.configuredProvider ? { configuredProvider: existing.configuredProvider, configuredAt: existing.configuredAt } : {}),
       }
       await upsertAgentCliRecord(options.registryPath, record)
-      options.onOutput?.('success', `${definition.name} ${version ? `v${version} ` : ''}安装完成。`)
+      options.onOutput?.('success', source === 'raw-installer'
+        ? `${definition.name} 官方安装向导已启动，请在向导中完成安装。`
+        : `${definition.name} ${version ? `v${version} ` : ''}安装完成。`)
       return { entry: await entryFor(id), logTail: logLines.slice(-LOG_TAIL_LINES) }
     },
 
@@ -370,6 +479,12 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
         }
         await removeAgentCliRecord(options.registryPath, id)
         options.onOutput?.('success', `${definition.name} 已卸载。`)
+        return listResult()
+      }
+      if (definition.installKind === 'raw-installer') {
+        // 桌面端安装器有自己的卸载入口（系统设置/开始菜单），启动器只清自己的记录。
+        await removeAgentCliRecord(options.registryPath, id)
+        options.onOutput?.('success', `${definition.name} 已从启动器移除；如需彻底卸载，请用系统「应用和功能」里的官方卸载入口。`)
         return listResult()
       }
       const runtime = await options.resolveNode().catch(() => null)
