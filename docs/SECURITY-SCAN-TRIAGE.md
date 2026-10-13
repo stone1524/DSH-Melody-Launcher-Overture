@@ -63,5 +63,5 @@
 
 ## 后续建议（未实施）
 
-- 扫描范围包含了 `dist/`、`dist-electron/` 编译产物与捆绑库代码，是 307+ 条误报的来源。建议给 Mimosa 配置忽略构建输出目录（或在打包前扫描），让下次深扫的信号噪声比可读。
+- **扫描噪声治理**：本轮 307+ 条误报源于扫描范围包含 `dist/`、`dist-electron/` 编译产物（捆绑的 adm-zip 库代码被当应用分析）。已核实 Mimosa 1.0.3 无项目侧排除接口（scan-manifest 仅记录 target/depth，MCP 工具无 ignore 参数，`~/.mimosa` 下无用户配置文件）。**可行规程：下次深扫前先删除 `dist/` 与 `dist-electron/`（或只在干净 checkout 上扫）**，让信噪比可读。
 - coverage 状态 partial：动态派发调用图不完整。若后续需要更强保证，可补运行时验证类扫描。

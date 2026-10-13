@@ -61,7 +61,7 @@ import { recoverLegacyCredentials } from './dsh-credentials-compat'
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url))
 // 窗口图标与托盘图标共用同一资源；dev 取 public/，打包取 dist/。
-const launcherIconPath = path.join(moduleDirectory, app.isPackaged ? '../dist/launcher-icon.png' : '../public/launcher-icon.png')
+const launcherIconPath = path.join(moduleDirectory, app.isPackaged ? '../dist/launcher-logo.png' : '../public/launcher-logo.png')
 
 /**
  * 随包运行时的根目录（Node 与 pnpm）。当前**只有开发态生效**：

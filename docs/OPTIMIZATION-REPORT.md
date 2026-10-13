@@ -35,7 +35,8 @@
 | 6 | ✅ | **demo-api（2182 行 mock API）无条件进生产包**：`src/api/client.ts:22` 动态 import 无环境守卫，生产渲染层永远走不到（preload 提供 window.api） | client.ts 的 resolve 逻辑；demo-api-*.js chunk 71KB + map 176KB | 加 `import.meta.env.DEV` 守卫，生产构建 tree-shake 掉整个 chunk | dist -250KB 级 |
 | 7 | ✅ | **未启用压缩上限** | package.json build 无 compression 配置 | `compression: "maximum"` | portable/installer 再降数 MB |
 | 8 | ✅ | **win-unpacked 携带 20MB LICENSES.chromium.html** | win-unpacked 根目录实测 20MB | 新增 `scripts/after-pack.cjs`（afterPack 钩子）删除该文件。⚠️ 法律提示：这是 Chromium 第三方许可文本，删除后分发物不再携带完整许可清单（Chromium 内部 about:credits 仍含），商用分发前建议恢复 | win-unpacked -20MB |
-| 9 | 📋 | **whale-avatar.png 370KB 未压缩**（public/ 静态资源直通 dist） | dist/whale-avatar.png 370KB | 建议用 tinypng/oxipng 压到 ~150KB；需装工具或手动处理，本次未动 | ~200KB |
+| 9 | ✅ | **whale-avatar.png 361.6KB 未压缩**（public/ 静态资源直通 dist），且显示尺寸仅 30×30（LauncherHome.tsx 标题栏） | 源图 512×512 → 重采样 256 + 256 色 palette 量化 = **35.3KB（-90%）** | sharp 临时环境处理（未进项目依赖） | -326KB |
+| 26 | ✅ | **launcher-icon.png 与 launcher-logo.png 字节级同一文件**（md5 相同），favicon（index.html）、窗口图标（main.ts:64）、README 各发一份进 dist | md5sum 对比 | 统一指向 launcher-logo.png 后删除 icon 副本；logo 本体保留字节原样（AUTHORIZATION.md 声明其为保留的上游像素风资产，不做有损重编码） | -56KB |
 | 10 | 📋 | **dxcompiler.dll 25MB**（Electron 43 自带，D3D 着色器编译） | win-unpacked 实测 | 删除可再省 25MB（unpacked 口径），但在部分 GPU/驱动组合下有渲染风险，本次不动 | （风险换体积，不建议） |
 
 ### P2 构建 / 发布流程类
@@ -43,7 +44,7 @@
 | # | 状态 | 问题 | 证据 | 处理 |
 | --- | --- | --- | --- | --- |
 | 11 | ✅ | **只有 portable 交付形态**，portable 每次启动要解压全部文件到 %TEMP%，启动慢、留垃圾、被杀软误报概率高 | package.json `win.target: ["portable"]` | 增加 `nsis` target（辅助式安装器：可选目录、建桌面/开始菜单快捷方式、per-user 免管理员），artifactName `Agent-Hub-${version}-setup.exe` |
-| 12 | ✅ | **package.json repository/homepage 仍指向上游 rirko/dsh-melody-launcher**，而本 fork 已独立演进（README 徽标指向 Miyazawai fork） | package.json 对比 README 徽标 | 改为 `github.com/Miyazawai/DSH-Melody-Launcher-Overture` |
+| 12 | ✅ | **package.json repository/homepage 仍指向上游 rirko/dsh-melody-launcher**，而本 fork 已独立演进（README 徽标指向 Miyazawai fork） | package.json 对比 README 徽标 | 改为 `github.com/Miyazawai/DSH-Melody-Launcher-Overture`；并补 `author: Miyazawai`（electron-builder 每次打包警告 author missed，NSIS 安装器发布者为空） |
 | 13 | ✅ | **CI artifact 名过时**：叫 `DSH-Launcher-portable`（产品已更名 Agent Hub，且现在含安装器） | .github/workflows/build.yml | 改名 `Agent-Hub-artifacts`；`release/*.exe` 通配已自动覆盖两种 exe，无需改路径 |
 | 14 | ✅ | **package:win 脚本写死 portable** | `"electron-builder --win portable"` | 改 `electron-builder --win`（跟随配置的全部 target） |
 | 15 | 📋 | **offline-packs 构建脚本产物不进 git**，`zcode/` 安装器需维护者手动放入（README 已写明，属设计而非缺陷） | scripts/build-offline-packs.mts、offline-packs/README.md | 维持现状，无需处理 |
@@ -62,12 +63,12 @@
 
 | 口径 | 优化前 | 优化后 | 变化 |
 | --- | --- | --- | --- |
-| portable exe | 94,568,138 B（90.2 MiB） | **84,708,408 B（80.8 MiB）** | **-9.4 MiB（-10.4%）** |
+| portable exe | 94,568,138 B（90.2 MiB） | **84,378,787 B（80.5 MiB）** | **-9.7 MiB（-10.8%）** |
 | win-unpacked | 387 MB | **287 MB** | **-100 MB（-26%）** |
-| app.asar | 37 MB | **4 MB** | -89% |
+| app.asar | 37 MB | **3.5 MB** | -90% |
 | locales | 47 MB / 55 语言 | 2 MB / 3 语言 | -96% |
-| dist（渲染层产物） | 5 MB（含 1.6MB map + demo chunk） | 3 MB（0 map、0 demo） | -40% |
-| 新增交付物 | — | Agent-Hub-1.0.4-setup.exe（85,015,894 B）+ .blockmap | NSIS 安装器 |
+| dist（渲染层产物） | 5 MB（含 1.6MB map + demo chunk + 474KB 图片） | 3 MB（0 map、0 demo、图片 94KB） | -45% |
+| 新增交付物 | — | Agent-Hub-1.0.4-setup.exe（84,686,319 B）+ .blockmap | NSIS 安装器 |
 
 > 说明：portable 的绝对收益小于 win-unpacked，因为其体积主体是 Electron 运行时
 > （unpacked 216MB，压缩后 ~55-60MB），该部分不可削减；asar 与 locales 的削减
@@ -75,11 +76,11 @@
 
 ## 验证记录（2026-10-13 全部通过）
 
-- [x] vitest 全绿：**953 passed / 11 skipped / 0 failed**（改动前后同数）
+- [x] vitest 全绿：**953 passed / 11 skipped / 0 failed**（每轮改动后均复验）
 - [x] tsc --noEmit 零错误
-- [x] electron-builder 26.15.3 产出 `Agent-Hub-1.0.4-portable.exe` + `Agent-Hub-1.0.4-setup.exe` 至 E:\agent-hub-build（日志确认 `no node modules returned`、`after-pack: removed LICENSES.chromium.html`、两 exe 均通过 signtool 签名步骤）
-- [x] 新 portable exe 启动验证：electron 进程带 "Agent Hub" 主窗口正常出现，验证后关闭
-- [x] asar 复检：仅含 dist / dist-electron / package.json，零 node_modules、零 sourcemap、零 demo chunk
+- [x] electron-builder 26.15.3 产出 `Agent-Hub-1.0.4-portable.exe` + `Agent-Hub-1.0.4-setup.exe` 至 E:\agent-hub-build（日志确认 `no node modules returned`、`after-pack: removed LICENSES.chromium.html`、两 exe 均通过 signtool 签名步骤，author 警告已消失）
+- [x] 新 portable exe 启动验证（共三轮：体积轮、安全轮、资产轮，均 "Agent Hub" 主窗口正常出现，验证后关闭）
+- [x] asar 复检：仅含 dist / dist-electron / package.json，零 node_modules、零 sourcemap、零 demo chunk、图标文件单份
 - [x] 旧 Agent-Hub-1.0.3-portable.exe 已按约定清除
 
 ### P4 安全扫描类（Mimosa deep，433 条发现，详见 SECURITY-SCAN-TRIAGE.md）
@@ -89,7 +90,7 @@
 | 21 | ✅ | 子进程环境可决定批处理解释器（ComSpec） | process.ts:130 原取 `environment.ComSpec` | 只认启动器自身环境的 ComSpec |
 | 22 | ✅ | 导入包依赖名未过白名单即进路径拼接（`..` 段写入原语） | main.ts fillMissingDependencies 循环 | `isSafePackageName` 门禁，非法名跳过 |
 | 23 | ✅ | 远端 Release version 未消毒直拼下载文件名 | official-pack.ts officialPackAssetName | 与 installer.ts 同款字符消毒 |
-| 24 | 📋 | 扫描范围含 dist/dist-electron 编译产物与捆绑库，产生 307+ 条 addLocalFile 误报 | main.js:1657 为 adm-zip 库压缩代码 | 建议后续配置忽略构建输出目录 |
+| 24 | 📋 | 扫描范围含 dist/dist-electron 编译产物与捆绑库，产生 307+ 条 addLocalFile 误报 | main.js:1657 为 adm-zip 库压缩代码 | Mimosa 1.0.3 无项目侧排除接口（manifest 仅 target/depth，工具无 ignore 参数）；可行的操作规程是**扫描前清理 dist/ 与 dist-electron/**，已写入分诊报告 |
 | 25 | 📋 | 覆盖状态 partial：动态派发调用图不完整 | coverage.json gaps | 如需更强保证补运行时验证 |
 
 ## 改动文件清单

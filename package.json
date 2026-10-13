@@ -3,6 +3,7 @@
   "version": "1.0.4",
   "private": true,
   "description": "A local desktop launcher and plugin organizer for DeepSeek Harness.",
+  "author": "Miyazawai",
   "keywords": [
     "dsh",
     "deepseek",

@@ -14,6 +14,7 @@
 - **新增传统安装器**：除了 portable，现在同时产出 NSIS 安装器 `Agent-Hub-1.0.4-setup.exe`（辅助式安装、可选安装目录、per-user 免管理员、自动建桌面与开始菜单快捷方式）。portable 每次启动要把全部文件解压到 %TEMP%，慢且易被杀软误报；装进机器的版本没有这个问题。CI 与 `npm run package:win` 跟随配置同时产出两种 exe。
 - **win-unpacked 剥离 20MB 的 LICENSES.chromium.html**（afterPack 钩子）：纯许可文本，运行无关；商用分发前建议恢复（见报告）。
 - **仓库元数据归位**：package.json 的 repository/homepage 从上游 rirko 仓库改为本 fork；CI artifact 更名 `Agent-Hub-artifacts`；README 测试徽标 933 → 953。
+- **静态资产瘦身与去重**：首页鲸鱼娘头像从 512×512/361.6KB 重采样到 256×256 + palette 量化（界面显示尺寸仅 30×30），**35.3KB（-90%）**；favicon 与窗口图标原引用的 `launcher-icon.png` 与 `launcher-logo.png` 是字节级同一文件，统一指向后者后删除副本（logo 本体按授权说明保留上游字节原样）。package.json 补 `author` 字段，消除 electron-builder 打包警告、NSIS 安装器显示发布者。
 
 ### 修复
 
