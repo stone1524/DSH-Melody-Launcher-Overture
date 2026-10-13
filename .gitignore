@@ -21,3 +21,8 @@ design-skills/
 
 # 出包体积实测的临时输出目录（--config.directories.output 指到这里，量完删）
 /release-*-probe*/
+
+# offline-packs：构建产物体积大（数百 MB），只进分发不进仓库
+offline-packs/*/pack.zip
+offline-packs/zcode/*.exe
+offline-packs/manifest.json

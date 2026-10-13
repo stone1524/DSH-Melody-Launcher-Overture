@@ -39,7 +39,11 @@ async function main(): Promise<void> {
     const prefix = path.join(scratch, agent.id, 'prefix')
     await mkdir(path.join(prefix, 'node_modules'), { recursive: true })
     console.log(`[offline-packs] 安装 ${agent.pkg} …`)
-    const install = await runCommand('npm.cmd', [
+    // 不走 npm.cmd shim（cmd 包装下 %~dp0 解析易受环境干扰），直接用 node 调 npm 的 JS 入口。
+    const npmCli = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js')
+    let outputTail = ''
+    const install = await runCommand(process.execPath, [
+      npmCli,
       'install', '-g', `${agent.pkg}@latest`,
       '--prefix', prefix,
       '--registry', REGISTRY,
@@ -48,10 +52,13 @@ async function main(): Promise<void> {
       cwd: scratch,
       env: { ...process.env, CI: 'true' },
       timeoutMs: 10 * 60 * 1000,
-      onOutput: () => undefined,
+      onOutput: text => {
+        outputTail = `${outputTail}${text}`.slice(-4000)
+      },
     })
     if (install.exitCode !== 0) {
-      console.error(`[offline-packs] ${agent.pkg} 安装失败，跳过（退出码 ${install.exitCode}）`)
+      console.error(`[offline-packs] ${agent.pkg} 安装失败，跳过（退出码 ${install.exitCode}）。输出尾部：`)
+      console.error(outputTail.split(/\r?\n/).slice(-12).join('\n'))
       continue
     }
     // 回读实际版本（与启动器同一条路径：包内 package.json）。
