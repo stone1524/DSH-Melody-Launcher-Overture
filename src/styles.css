@@ -1,3 +1,16 @@
+/* ===== 8-bit 像素字体（Fusion Pixel，OFL 许可，见 src/assets/fonts/） ===== */
+@font-face {
+  font-family: 'Fusion Pixel';
+  src: url('./assets/fonts/fusion-pixel-12px-latin.woff2') format('woff2');
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+2000-206F, U+2190-21FF, U+2500-25FF;
+}
+@font-face {
+  font-family: 'Fusion Pixel';
+  src: url('./assets/fonts/fusion-pixel-12px-zh_hans.woff2') format('woff2');
+  font-display: swap;
+}
+
 /* :root 即默认主题：DeepSeek 蓝。其余主题通过 data-theme 覆盖同名变量。 */
 :root {
   font-family: Inter, "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
@@ -164,6 +177,122 @@
   --topbar-hover-bg: rgba(255, 255, 255, 0.08);
   --topbar-hover-strong-bg: rgba(255, 255, 255, 0.12);
   --topbar-border: #3d3d41;
+}
+
+/* ===== 8-bit 像素主题（Agent Hub Edition 门面）：PICO-8 色板 + 硬边框 + 硬阴影 ===== */
+:root[data-theme='pixel'] {
+  color-scheme: dark;
+  --app-bg: #1a1c2c;
+  --chrome: #16213e;
+  --chrome-strong: #101830;
+  --workspace-bg: #12122a;
+  --ink: #f4f4f4;
+  --muted: #a5a8c8;
+  --quiet: #7076a0;
+  --line: #34346a;
+  --line-strong: #4c4f96;
+  --surface: #22244a;
+  --surface-soft: #282a52;
+  --surface-strong: #303262;
+  --accent: #00e436;
+  --accent-hover: #5ffc85;
+  --accent-soft: #103424;
+  --focus-ring: rgba(0, 228, 54, 0.45);
+  --scrollbar-thumb: rgba(0, 228, 54, 0.35);
+  --scrollbar-thumb-hover: rgba(0, 228, 54, 0.6);
+  --blue: #29adff;
+  --blue-soft: #12325a;
+  --amber: #ffca28;
+  --amber-soft: #3d3208;
+  --danger: #ff5d6c;
+  --danger-soft: #4d1622;
+  /* 8-bit 阴影：无模糊的硬偏移。 */
+  --shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
+  --chrome-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+  --sidebar-bg: #16213e;
+  --topbar-bg: #16213e;
+  --topbar-ink: #f4f4f4;
+  --topbar-ink-dim: #a5a8c8;
+  --topbar-active-bg: #00e436;
+  --topbar-active-ink: #1a1c2c;
+  --topbar-hover-bg: rgba(255, 255, 255, 0.08);
+  --topbar-hover-strong-bg: rgba(255, 255, 255, 0.12);
+  --topbar-border: #4c4f96;
+  /* 像素字体接管全界面。 */
+  font-family: 'Fusion Pixel', 'Zpix', 'SimSun', 'NSimSun', monospace;
+}
+
+/* 像素形态：直角 + 硬边框 + 硬阴影（仅 pixel 主题生效）。 */
+:root[data-theme='pixel'] *,
+:root[data-theme='pixel'] *::before,
+:root[data-theme='pixel'] *::after {
+  border-radius: 0;
+}
+
+:root[data-theme='pixel'] img {
+  image-rendering: pixelated;
+}
+
+:root[data-theme='pixel'] .sidebar {
+  border-right: 3px solid #000;
+}
+
+:root[data-theme='pixel'] .sidebar-item {
+  border: 2px solid transparent;
+}
+
+:root[data-theme='pixel'] .sidebar-item.active,
+:root[data-theme='pixel'] .sidebar-item.active:hover {
+  color: #1a1c2c;
+  background: var(--accent);
+  border-color: #000;
+  box-shadow: 3px 3px 0 #000;
+}
+
+:root[data-theme='pixel'] .traffic-light {
+  border: 2px solid #000;
+}
+
+:root[data-theme='pixel'] .primary-command,
+:root[data-theme='pixel'] .secondary-button,
+:root[data-theme='pixel'] .danger-button {
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000;
+  font-weight: 700;
+}
+
+:root[data-theme='pixel'] .primary-command:active,
+:root[data-theme='pixel'] .secondary-button:active,
+:root[data-theme='pixel'] .danger-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+:root[data-theme='pixel'] .modal {
+  border: 3px solid #000;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='pixel'] .settings-row,
+:root[data-theme='pixel'] .settings-row-card,
+:root[data-theme='pixel'] .theme-option,
+:root[data-theme='pixel'] .error-banner,
+:root[data-theme='pixel'] .agent-cli-log,
+:root[data-theme='pixel'] .agent-cli-test-ok,
+:root[data-theme='pixel'] .agent-cli-test-fail {
+  border: 2px solid var(--line-strong);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='pixel'] input,
+:root[data-theme='pixel'] select,
+:root[data-theme='pixel'] textarea {
+  border: 2px solid var(--line-strong);
+  background: var(--workspace-bg);
+}
+
+:root[data-theme='pixel'] ::-webkit-scrollbar-thumb {
+  border: 2px solid #000;
 }
 
 /* 主题精简为日间/夜间两款；ocean/berry/graphite 已移除，旧存档值自动回退日间。 */
@@ -6727,6 +6856,9 @@ input:focus-visible {
 .theme-swatch.macos-dark i:nth-child(1) { background: #232326; }
 .theme-swatch.macos-dark i:nth-child(2) { background: #3a99fc; }
 .theme-swatch.macos-dark i:nth-child(3) { background: #0a84ff; }
+.theme-swatch.pixel i:nth-child(1) { background: #1a1c2c; }
+.theme-swatch.pixel i:nth-child(2) { background: #29adff; }
+.theme-swatch.pixel i:nth-child(3) { background: #00e436; }
 
 
 .form-section p {

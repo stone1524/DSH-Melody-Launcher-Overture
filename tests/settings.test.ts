@@ -48,8 +48,8 @@ describe('defaultSettings', () => {
     expect(settings.dshHome).toBe('/home/tester/.dsh')
     expect(settings.launchExecutable).toBe('npx')
     expect(settings.webPort).toBe(3080)
-    // Agent Hub Edition：默认主题改为 macOS 风格。
-    expect(settings.uiTheme).toBe('macos')
+    // Agent Hub Edition：默认主题改为 8-bit 像素风。
+    expect(settings.uiTheme).toBe('pixel')
     expect(settings.aiDeveloperMode).toBe(false)
     expect(settings.aiPrompt).toBe('')
   })

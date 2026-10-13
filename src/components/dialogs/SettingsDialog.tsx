@@ -18,6 +18,7 @@ interface SettingsDialogProps {
 }
 
 const UI_THEMES: Array<{ id: UiTheme; label: string }> = [
+  { id: 'pixel', label: '8-bit 像素' },
   { id: 'macos', label: 'macOS 日间' },
   { id: 'macos-dark', label: 'macOS 夜间' },
   { id: 'deepseek', label: '经典日间' },

@@ -16,6 +16,8 @@ import type { AgentCliEntry, AgentCliListResult, AgentCliProviderPreset, AgentCl
 const STATUS_HINTS: Record<string, string> = {
   'qwen-env': '配置写入 ~/.qwen/.env（OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL）',
   'opencode-json': '配置写入 ~/.config/opencode/opencode.json（openai-compatible provider）',
+  'codex-config': '配置写入 ~/.codex/config.toml + auth.json，并把 OPENAI_API_KEY 写入用户环境变量',
+  'hermes-env': '把服务商 API Key 写入用户环境变量（DEEPSEEK_API_KEY / KIMI_API_KEY 等），Hermes 启动时读取；首次使用可在终端运行 hermes model 选择提供商',
   none: '该工具需要用它自己的交互式命令完成配置（如 openclaw configure），或预约远程陪跑。',
 }
 

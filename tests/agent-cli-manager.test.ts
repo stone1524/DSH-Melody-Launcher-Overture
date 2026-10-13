@@ -70,7 +70,7 @@ describe('agent-cli manager', () => {
   it('list 返回目录与 providers，未安装时 record 为空', async () => {
     const manager = createAgentCliManager(makeOptions())
     const result = await manager.list()
-    expect(result.entries.map(item => item.definition.id)).toEqual(['qwen-code', 'opencode', 'openclaw'])
+    expect(result.entries.map(item => item.definition.id)).toEqual(['qwen-code', 'opencode', 'openclaw', 'codex', 'hermes'])
     expect(result.entries.every(item => item.record === null)).toBe(true)
     expect(result.providers.map(provider => provider.id)).toEqual(['deepseek', 'zhipu', 'qwen', 'kimi'])
   })
@@ -142,6 +142,62 @@ describe('agent-cli manager', () => {
 
     await manager.install('openclaw')
     await expect(manager.configure({ id: 'openclaw', providerId: 'deepseek', apiKey: 'k' })).rejects.toThrow(/暂不支持/)
+  })
+
+  it('configure 写 codex-config（config.toml + auth.json + 用户环境变量）', async () => {
+    const state: StubState = { calls: [], installSucceeds: true, verifySucceeds: true, versionOutput: '1.0.0' }
+    const home = path.join(dir, 'home')
+    const envCalls: { name: string; value: string }[] = []
+    const runner = stubRunner(state)
+    const manager = createAgentCliManager(makeOptions({
+      runCommand: async input => {
+        // 拦截 powershell 环境变量写入，验证 base64 值可解码且与 Key 一致。
+        if (input.executable === 'powershell.exe' && input.args.some(arg => arg.includes('SetEnvironmentVariable'))) {
+          const script = input.args[input.args.indexOf('-Command') + 1]
+          const encoded = /FromBase64String\('([^']+)'\)/.exec(script)?.[1] ?? ''
+          envCalls.push({ name: /SetEnvironmentVariable\('([^']+)'/u.exec(script)?.[1] ?? '', value: Buffer.from(encoded, 'base64').toString('utf8') })
+          return { exitCode: 0, output: '' }
+        }
+        return runner(input)
+      },
+      homeDir: home,
+    }))
+    await manager.install('codex')
+    const result = await manager.configure({ id: 'codex', providerId: 'kimi', apiKey: 'sk-kimi' })
+
+    expect(result.entries.find(item => item.definition.id === 'codex')?.record?.configuredProvider).toBe('kimi')
+    const toml = await readFile(path.join(home, '.codex', 'config.toml'), 'utf8')
+    expect(toml).toContain('model_provider = "launcher"')
+    expect(toml).toContain('base_url = "https://api.moonshot.cn/v1"')
+    expect(toml).toContain('model = "kimi-k2.5"')
+    const auth = JSON.parse(await readFile(path.join(home, '.codex', 'auth.json'), 'utf8')) as { OPENAI_API_KEY: string }
+    expect(auth.OPENAI_API_KEY).toBe('sk-kimi')
+    expect(envCalls).toEqual([{ name: 'OPENAI_API_KEY', value: 'sk-kimi' }])
+    // 注册表绝不存 Key。
+    const raw = await readFile(path.join(dir, 'agents.json'), 'utf8')
+    expect(raw).not.toContain('sk-kimi')
+  })
+
+  it('configure 写 hermes-env（服务商对应的环境变量名）', async () => {
+    const state: StubState = { calls: [], installSucceeds: true, verifySucceeds: true, versionOutput: '1.0.0' }
+    const home = path.join(dir, 'home')
+    const envCalls: { name: string; value: string }[] = []
+    const runner = stubRunner(state)
+    const manager = createAgentCliManager(makeOptions({
+      runCommand: async input => {
+        if (input.executable === 'powershell.exe' && input.args.some(arg => arg.includes('SetEnvironmentVariable'))) {
+          const script = input.args[input.args.indexOf('-Command') + 1]
+          const encoded = /FromBase64String\('([^']+)'\)/.exec(script)?.[1] ?? ''
+          envCalls.push({ name: /SetEnvironmentVariable\('([^']+)'/u.exec(script)?.[1] ?? '', value: Buffer.from(encoded, 'base64').toString('utf8') })
+          return { exitCode: 0, output: '' }
+        }
+        return runner(input)
+      },
+      homeDir: home,
+    }))
+    await manager.install('hermes')
+    await manager.configure({ id: 'hermes', providerId: 'qwen', apiKey: 'sk-dash' })
+    expect(envCalls).toEqual([{ name: 'DASHSCOPE_API_KEY', value: 'sk-dash' }])
   })
 
   it('testProvider 按状态码给出可读原因，网络异常转中文提示', async () => {

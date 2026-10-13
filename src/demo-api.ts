@@ -60,7 +60,7 @@ let demoSettings: AppSettings = {
   launchArgs: ['--yes', '@deepseek-ai/dsh', 'web'],
   webPort: 3080,
   openAfterLaunch: true,
-  uiTheme: 'deepseek',
+  uiTheme: 'pixel',
   dshVersion: '0.1.5-rc.1',
   nodeVersion: null,
 }
@@ -2167,6 +2167,8 @@ function agentCliDemoState(): AgentCliListResult {
       { definition: { id: 'qwen-code', name: 'Qwen Code', tagline: '阿里官方命令行编程助手，免费额度大', audience: '新手首选', npmPackage: '@qwen-code/qwen-code', versionArgs: ['--version'], configKind: 'qwen-env', configurable: true }, record: null },
       { definition: { id: 'opencode', name: 'OpenCode', tagline: '开源无锁定的终端编程 Agent', audience: '想自己挑模型', npmPackage: 'opencode-ai', versionArgs: ['--version'], configKind: 'opencode-json', configurable: true }, record: null },
       { definition: { id: 'openclaw', name: 'OpenClaw', tagline: '开源个人智能体框架', audience: '尝鲜用户', npmPackage: 'openclaw', versionArgs: ['--version'], configKind: 'none', configurable: false }, record: null },
+      { definition: { id: 'codex', name: 'Codex CLI', tagline: 'OpenAI 开源命令行编程 Agent，可指向任意 OpenAI 兼容端点', audience: '想用 Codex 工作流但接国产模型', npmPackage: '@openai/codex', versionArgs: ['--version'], configKind: 'codex-config', configurable: true }, record: null },
+      { definition: { id: 'hermes', name: 'Hermes Agent', tagline: 'Nous Research 开源智能体，中文社区提供国内安装镜像', audience: '进阶玩家', npmPackage: 'hermes-agent', versionArgs: ['--version'], configKind: 'hermes-env', configurable: true, installKind: 'hermes-installer' }, record: null },
     ],
     providers: [
       { id: 'deepseek', label: 'DeepSeek 开放平台', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', consoleUrl: 'https://platform.deepseek.com/' },

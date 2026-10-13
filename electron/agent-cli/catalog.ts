@@ -43,6 +43,14 @@ export function getAgentCliProvider(id: string): AgentCliProviderPreset | null {
   return AGENT_CLI_PROVIDERS.find(provider => provider.id === id) ?? null
 }
 
+/** Hermes 的服务商环境变量映射（官方 Quickstart 文档口径）。 */
+export const HERMES_PROVIDER_ENV: Record<AgentCliProviderPreset['id'], string> = {
+  deepseek: 'DEEPSEEK_API_KEY',
+  zhipu: 'GLM_API_KEY',
+  qwen: 'DASHSCOPE_API_KEY',
+  kimi: 'KIMI_API_KEY',
+}
+
 export const AGENT_CLI_DEFINITIONS: readonly AgentCliDefinition[] = [
   {
     id: 'qwen-code',
@@ -73,6 +81,27 @@ export const AGENT_CLI_DEFINITIONS: readonly AgentCliDefinition[] = [
     versionArgs: ['--version'],
     configKind: 'none',
     configurable: false,
+  },
+  {
+    id: 'codex',
+    name: 'Codex CLI',
+    tagline: 'OpenAI 开源命令行编程 Agent，可指向任意 OpenAI 兼容端点',
+    audience: '想用 Codex 工作流但接国产模型的用户；本启动器只做安装与端点配置，不涉及 OpenAI 账号。',
+    npmPackage: '@openai/codex',
+    versionArgs: ['--version'],
+    configKind: 'codex-config',
+    configurable: true,
+  },
+  {
+    id: 'hermes',
+    name: 'Hermes Agent',
+    tagline: 'Nous Research 开源智能体，中文社区提供国内安装镜像',
+    audience: '想要带消息网关（微信/飞书/QQ）、定时任务和语音的进阶玩家；Python 系，安装步骤多。',
+    npmPackage: 'hermes-agent',
+    versionArgs: ['--version'],
+    configKind: 'hermes-env',
+    configurable: true,
+    installKind: 'hermes-installer',
   },
 ] as const
 

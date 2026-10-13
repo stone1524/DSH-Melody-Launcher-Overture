@@ -17,7 +17,7 @@ import type {
   AgentCliProviderTestInput,
   AgentCliProviderTestResult,
 } from '../../src/types'
-import { AGENT_CLI_DEFINITIONS, AGENT_CLI_PROVIDERS, getAgentCliDefinition, getAgentCliProvider } from './catalog'
+import { AGENT_CLI_DEFINITIONS, AGENT_CLI_PROVIDERS, HERMES_PROVIDER_ENV, getAgentCliDefinition, getAgentCliProvider } from './catalog'
 import { findAgentCliRecord, readAgentCliRegistry, removeAgentCliRecord, upsertAgentCliRecord } from './registry'
 
 /** 安装日志保留的尾部行数（随结果返回，完整日志走 output 事件流）。 */
@@ -26,6 +26,8 @@ const LOG_TAIL_LINES = 40
 const INSTALL_TIMEOUT_MS = 10 * 60 * 1000
 /** 版本验证/卸载超时。 */
 const VERIFY_TIMEOUT_MS = 30_000
+/** Hermes 社区安装脚本硬顶：下载 + Python 环境装配，比 npm 慢得多。 */
+const HERMES_INSTALL_TIMEOUT_MS = 20 * 60 * 1000
 
 export interface CommandRunnerInput {
   executable: string
@@ -94,10 +96,18 @@ async function resolveBinJs(prefix: string, npmPackage: string): Promise<string>
 async function writeProviderConfig(options: AgentCliManagerOptions, request: AgentCliConfigureRequest, resolved: { baseUrl: string; model: string }): Promise<void> {
   const definition = getAgentCliDefinition(request.id)
   if (!definition) throw new AgentCliError('未知的 Agent CLI。')
-  const home = options.homeDir ?? os.homedir()
+  const home = path.resolve(options.homeDir ?? os.homedir())
+  /** 配置目录安全边界：必须仍落在用户主目录内（安全约定，与测试口径一致）。 */
+  const dirInHome = (...segments: string[]): string => {
+    const target = path.resolve(home, ...segments)
+    if (target !== home && !target.startsWith(home + path.sep)) throw new AgentCliError('配置路径越出用户主目录，已中止。')
+    return target
+  }
+  /** 同上，直接产出「已过边界校验的完整文件路径」。 */
+  const fileInHome = (...segments: string[]): string => dirInHome(...segments)
   if (definition.configKind === 'qwen-env') {
     // Qwen Code（Gemini CLI 系）读取 ~/.qwen/.env 的 OPENAI_* 变量接入 OpenAI 兼容端点。
-    const dir = path.join(home, '.qwen')
+    const dir = dirInHome('.qwen')
     await mkdir(dir, { recursive: true })
     const content = [
       `OPENAI_BASE_URL=${resolved.baseUrl}`,
@@ -110,7 +120,7 @@ async function writeProviderConfig(options: AgentCliManagerOptions, request: Age
   }
   if (definition.configKind === 'opencode-json') {
     // OpenCode：opencode.json 里注册 openai-compatible provider 并设默认模型。
-    const dir = path.join(home, '.config', 'opencode')
+    const dir = dirInHome('.config', 'opencode')
     await mkdir(dir, { recursive: true })
     const providerId = `launcher-${request.providerId}`
     const config = {
@@ -130,7 +140,59 @@ async function writeProviderConfig(options: AgentCliManagerOptions, request: Age
     await writeFile(path.join(dir, 'opencode.json'), `${JSON.stringify(config, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
     return
   }
+  if (definition.configKind === 'codex-config') {
+    // Codex CLI：config.toml 声明自定义 provider（OpenAI 兼容端点），auth.json 存
+    // API-Key 认证（与 codex login --api-key 的落盘格式一致），再持久化一次
+    // OPENAI_API_KEY 用户环境变量，覆盖「终端里直接跑 codex」的读取路径。
+    const tomlPath = fileInHome('.codex', 'config.toml')
+    const authPath = fileInHome('.codex', 'auth.json')
+    await mkdir(path.dirname(tomlPath), { recursive: true })
+    const configToml = [
+      `model = "${resolved.model}"`,
+      'model_provider = "launcher"',
+      '',
+      '[model_providers.launcher]',
+      `name = "${getAgentCliProvider(request.providerId)?.label ?? request.providerId}"`,
+      `base_url = "${resolved.baseUrl}"`,
+      'env_key = "OPENAI_API_KEY"',
+      'wire_api = "chat"',
+      '',
+    ].join('\n')
+    const authContent = JSON.stringify({ OPENAI_API_KEY: request.apiKey }, null, 2)
+    await writeFile(tomlPath, configToml, { encoding: 'utf8', mode: 0o600 })
+    await writeFile(authPath, authContent, { encoding: 'utf8', mode: 0o600 })
+    await setUserEnvVar(options, 'OPENAI_API_KEY', request.apiKey)
+    return
+  }
+  if (definition.configKind === 'hermes-env') {
+    // Hermes：各服务商读自己的环境变量（Quickstart 文档口径），持久化进用户环境。
+    const envName = HERMES_PROVIDER_ENV[request.providerId]
+    if (!envName) throw new AgentCliError('该服务商暂无 Hermes 环境变量映射。')
+    await setUserEnvVar(options, envName, request.apiKey)
+    return
+  }
   throw new AgentCliError('该工具暂不支持启动器内配置，请按官方指引完成配置。')
+}
+
+/** 把一个用户级环境变量持久化（写入注册表 User 环境，等价 setx）。供 Codex / Hermes 配置使用。 */
+async function setUserEnvVar(options: AgentCliManagerOptions, name: string, value: string): Promise<void> {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new AgentCliError('环境变量名非法。')
+  // 值经 base64 传入 powershell 解码，避免引号/特殊字符在命令行上被吃掉或注入。
+  const encoded = Buffer.from(value, 'utf8').toString('base64')
+  const script = `$v=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encoded}'));[Environment]::SetEnvironmentVariable('${name}',$v,'User')`
+  const fail = () => new AgentCliError('写入用户环境变量失败。')
+  if (options.runCommand) {
+    const result = await options.runCommand({ executable: 'powershell.exe', args: ['-NoProfile', '-NonInteractive', '-Command', script], env: { ...process.env }, timeoutMs: 30_000 })
+    if (result.exitCode !== 0) throw fail()
+    return
+  }
+  const { runCommand } = await import('../command')
+  const result = await runCommand('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+    cwd: options.prefixRoot,
+    env: { ...process.env },
+    timeoutMs: 30_000,
+  })
+  if (result.exitCode !== 0) throw fail()
 }
 
 export function createAgentCliManager(options: AgentCliManagerOptions): AgentCliManager {
@@ -175,6 +237,92 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
     }
   }
 
+  /** 从命令输出里提取语义化版本号。 */
+  function parseVersionLine(output: string): string | null {
+    const versionLine = output.trim().split(/\r?\n/).find(line => /\d+\.\d+\.\d+/.test(line)) ?? ''
+    return versionLine.match(/v?(\d+\.\d+\.\d+)/)?.[1] ?? null
+  }
+
+  /** npm 通道安装（默认）：便携 Node + 启动器私有前缀 + 镜像源。 */
+  async function installViaNpm(definition: { name: string; npmPackage: string; versionArgs: string[] }): Promise<{ version: string | null; logLines: string[] }> {
+    const logLines: string[] = []
+    const log = (text: string) => {
+      for (const line of text.split(/\r?\n/)) if (line.trim()) logLines.push(line)
+    }
+    const runtime = await options.resolveNode()
+    const prefix = prefixDir()
+    await mkdir(prefix, { recursive: true })
+    const registry = (options.readNpmRegistry ? await options.readNpmRegistry().catch(() => null) : null)?.trim() || 'https://registry.npmmirror.com'
+    const env = childEnv({ npm_config_prefix: prefix, npm_config_registry: registry })
+    options.onOutput?.('info', `npm 源：${registry}`)
+
+    // runtime.npm 在 Windows 上是 npm.cmd：spawnCommand 会自动经 cmd.exe 包装。
+    const installResult = await runner({
+      executable: runtime.npm,
+      args: ['install', '-g', definition.npmPackage],
+      env,
+      timeoutMs: INSTALL_TIMEOUT_MS,
+    })
+    log(installResult.output)
+    if (installResult.exitCode !== 0) {
+      options.onOutput?.('error', `${definition.name} 安装失败（退出码 ${installResult.exitCode}）。`)
+      throw new AgentCliError('npm 安装失败。常见原因：网络中断、镜像不可用。可重试，或在设置里更换 npm 镜像后重试。')
+    }
+
+    // 回读实际安装版本并验证可执行。
+    const binJs = await resolveBinJs(prefix, definition.npmPackage)
+    const verify = await runner({
+      executable: runtime.node,
+      args: [binJs, ...definition.versionArgs],
+      env,
+      timeoutMs: VERIFY_TIMEOUT_MS,
+    })
+    log(verify.output)
+    const version = parseVersionLine(verify.output)
+    if (verify.exitCode !== 0) {
+      options.onOutput?.('error', `${definition.name} 装上了但启动验证失败。`)
+      throw new AgentCliError(`安装完成但执行验证失败（退出码 ${verify.exitCode}）。日志已保留，可复制给服务方诊断。`)
+    }
+    return { version, logLines }
+  }
+
+  /** Hermes 通道：中文社区官方 PowerShell 安装脚本（Quickstart 文档的 Windows 原生路径）。 */
+  async function installViaHermesInstaller(definition: { name: string }): Promise<{ version: string | null; logLines: string[] }> {
+    const logLines: string[] = []
+    const log = (text: string) => {
+      for (const line of text.split(/\r?\n/)) if (line.trim()) logLines.push(line)
+    }
+    // 官方 Quickstart 的 Windows 原生安装路径：中文社区镜像的 PowerShell 一键脚本。
+    // 字面量写死、不拼变量：来源固定，脚本内容不经启动器之手。
+    const installScript = 'irm https://res1.hermesagent.org.cn/install.ps1 | iex'
+    const installResult = await runner({
+      executable: 'powershell.exe',
+      args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', installScript],
+      env: childEnv({}),
+      timeoutMs: HERMES_INSTALL_TIMEOUT_MS,
+    })
+    log(installResult.output)
+    if (installResult.exitCode !== 0) {
+      options.onOutput?.('error', `${definition.name} 安装脚本失败（退出码 ${installResult.exitCode}）。`)
+      throw new AgentCliError('Hermes 安装脚本执行失败。常见原因：网络中断。可重试，或到中文社区文档查看手动安装步骤。')
+    }
+    // 安装器会改用户 PATH；本进程环境不会自动刷新，验证前从注册表重读 PATH。
+    const verifyScript = `$m=[Environment]::GetEnvironmentVariable('Path','Machine');$u=[Environment]::GetEnvironmentVariable('Path','User');$env:Path="$m;$u"; hermes --version`
+    const verify = await runner({
+      executable: 'powershell.exe',
+      args: ['-NoProfile', '-NonInteractive', '-Command', verifyScript],
+      env: childEnv({}),
+      timeoutMs: VERIFY_TIMEOUT_MS,
+    })
+    log(verify.output)
+    const version = parseVersionLine(verify.output)
+    if (verify.exitCode !== 0) {
+      options.onOutput?.('error', `${definition.name} 安装脚本执行完，但验证 hermes 命令失败（可能需要重开终端）。`)
+      throw new AgentCliError('安装脚本执行完成，但验证 hermes 命令失败。请重开启动器后再试；日志已保留。')
+    }
+    return { version, logLines }
+  }
+
   return {
     async list() {
       return listResult()
@@ -183,47 +331,10 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
     async install(id) {
       const definition = getAgentCliDefinition(id)
       if (!definition) throw new AgentCliError('未知的 Agent CLI。')
-      const logLines: string[] = []
-      const log = (text: string) => {
-        for (const line of text.split(/\r?\n/)) if (line.trim()) logLines.push(line)
-      }
-      options.onOutput?.('info', `开始安装 ${definition.name}（npm 走国内镜像，约 1–3 分钟）…`)
-
-      const runtime = await options.resolveNode()
-      const prefix = prefixDir()
-      await mkdir(prefix, { recursive: true })
-      const registry = (options.readNpmRegistry ? await options.readNpmRegistry().catch(() => null) : null)?.trim() || 'https://registry.npmmirror.com'
-      const env = childEnv({ npm_config_prefix: prefix, npm_config_registry: registry })
-      options.onOutput?.('info', `npm 源：${registry}`)
-
-      // runtime.npm 在 Windows 上是 npm.cmd：spawnCommand 会自动经 cmd.exe 包装。
-      const installResult = await runner({
-        executable: runtime.npm,
-        args: ['install', '-g', definition.npmPackage],
-        env,
-        timeoutMs: INSTALL_TIMEOUT_MS,
-      })
-      log(installResult.output)
-      if (installResult.exitCode !== 0) {
-        options.onOutput?.('error', `${definition.name} 安装失败（退出码 ${installResult.exitCode}）。`)
-        throw new AgentCliError('npm 安装失败。常见原因：网络中断、镜像不可用。可重试，或在设置里更换 npm 镜像后重试。')
-      }
-
-      // 回读实际安装版本并验证可执行。
-      const binJs = await resolveBinJs(prefix, definition.npmPackage)
-      const verify = await runner({
-        executable: runtime.node,
-        args: [binJs, ...definition.versionArgs],
-        env,
-        timeoutMs: VERIFY_TIMEOUT_MS,
-      })
-      log(verify.output)
-      const versionLine = verify.output.trim().split(/\r?\n/).find(line => /\d+\.\d+\.\d+/.test(line)) ?? ''
-      const version = /v?(\d+\.\d+\.\d+)/.exec(versionLine)?.[1] ?? null
-      if (verify.exitCode !== 0) {
-        options.onOutput?.('error', `${definition.name} 装上了但启动验证失败。`)
-        throw new AgentCliError(`安装完成但执行验证失败（退出码 ${verify.exitCode}）。日志已保留，可复制给服务方诊断。`)
-      }
+      options.onOutput?.('info', `开始安装 ${definition.name}…`)
+      const { version, logLines } = definition.installKind === 'hermes-installer'
+        ? await installViaHermesInstaller(definition)
+        : await installViaNpm(definition)
 
       const now = nowIso(options)
       const existing = (await entryFor(id)).record
@@ -242,6 +353,25 @@ export function createAgentCliManager(options: AgentCliManagerOptions): AgentCli
     async uninstall(id) {
       const definition = getAgentCliDefinition(id)
       if (!definition) throw new AgentCliError('未知的 Agent CLI。')
+      if (definition.installKind === 'hermes-installer') {
+        // Hermes 不在 npm 前缀里：走它自己的清理命令，失败不阻塞记录清除。
+        const uninstallScript = '$m=[Environment]::GetEnvironmentVariable(\'Path\',\'Machine\');$u=[Environment]::GetEnvironmentVariable(\'Path\',\'User\');$env:Path="$m;$u"; pip uninstall -y hermes-agent'
+        const outcome = await runner({
+          executable: 'powershell.exe',
+          args: ['-NoProfile', '-NonInteractive', '-Command', uninstallScript],
+          env: childEnv({}),
+          timeoutMs: VERIFY_TIMEOUT_MS * 2,
+        }).catch(error => {
+          options.onOutput?.('error', `Hermes 卸载命令失败：${error instanceof Error ? error.message : String(error)}（注册表记录仍会清除）`)
+          return { exitCode: -1, output: '' }
+        })
+        if (outcome.exitCode !== 0) {
+          options.onOutput?.('info', 'Hermes 自动卸载未成功（可能本来就没装完）；注册表记录已清除。')
+        }
+        await removeAgentCliRecord(options.registryPath, id)
+        options.onOutput?.('success', `${definition.name} 已卸载。`)
+        return listResult()
+      }
       const runtime = await options.resolveNode().catch(() => null)
       if (runtime) {
         const env = childEnv({ npm_config_prefix: prefixDir() })

@@ -15,7 +15,7 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true })
 })
 
-function record(id: 'qwen-code' | 'opencode' | 'openclaw', overrides: Partial<Parameters<typeof upsertAgentCliRecord>[1]> = {}): Parameters<typeof upsertAgentCliRecord>[1] {
+function record(id: 'qwen-code' | 'opencode' | 'openclaw' | 'codex' | 'hermes', overrides: Partial<Parameters<typeof upsertAgentCliRecord>[1]> = {}): Parameters<typeof upsertAgentCliRecord>[1] {
   return {
     id,
     version: '1.2.3',
@@ -85,12 +85,16 @@ describe('agent-cli catalog', () => {
   it('目录 id 唯一，且每项都有 npm 包名与版本参数', () => {
     const ids = AGENT_CLI_DEFINITIONS.map(item => item.id)
     expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toContain('codex')
+    expect(ids).toContain('hermes')
     for (const definition of AGENT_CLI_DEFINITIONS) {
       expect(definition.npmPackage).toMatch(/^[\w@][\w./-]*$/)
       expect(definition.versionArgs.length).toBeGreaterThan(0)
-      expect(['qwen-env', 'opencode-json', 'none']).toContain(definition.configKind)
+      expect(['qwen-env', 'opencode-json', 'codex-config', 'hermes-env', 'none']).toContain(definition.configKind)
       // configurable 与 configKind 必须一致：none 就不能承诺向导化配置。
       expect(definition.configurable).toBe(definition.configKind !== 'none')
+      // hermes 走社区安装脚本通道，其余默认 npm。
+      expect(definition.id === 'hermes').toBe(definition.installKind === 'hermes-installer')
     }
   })
 

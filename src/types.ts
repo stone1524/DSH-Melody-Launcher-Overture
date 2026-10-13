@@ -1,7 +1,7 @@
 export type WindowMode = 'launcher' | 'manager'
 /** 一级导航 tab：启动页 + 五个 C 端面板（原二级设置页拍平）。顺序与显示名见 src/lib/nav.ts。 */
 export type HomeTab = 'start' | 'versions' | 'plugins' | 'skills' | 'presets' | 'packs' | 'agents'
-export type UiTheme = 'deepseek' | 'night' | 'macos' | 'macos-dark'
+export type UiTheme = 'deepseek' | 'night' | 'macos' | 'macos-dark' | 'pixel'
 
 export interface AppSettings {
   dshInstallPath: string
@@ -1247,7 +1247,7 @@ export interface DshMarketProgress {
 // ===== Agent CLI 工具（Agent Hub Edition 新增）=====
 
 /** 内置目录里的 Agent CLI id。 */
-export type AgentCliId = 'qwen-code' | 'opencode' | 'openclaw'
+export type AgentCliId = 'qwen-code' | 'opencode' | 'openclaw' | 'codex' | 'hermes'
 
 /**
  * 国产模型服务商预设（OpenAI 兼容端点）。
@@ -1277,11 +1277,15 @@ export interface AgentCliDefinition {
    * 配置落盘方式：
    * - qwen-env：写 %USERPROFILE%\.qwen\.env（OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL）
    * - opencode-json：写 %USERPROFILE%\.config\opencode\opencode.json（provider + model）
+   * - codex-config：写 %USERPROFILE%\.codex\config.toml + auth.json，并 setx OPENAI_API_KEY
+   * - hermes-env：把服务商对应的 API Key 环境变量 setx 进用户环境（DEEPSEEK_API_KEY 等）
    * - none：暂无向导化配置（如 openclaw 需交互式 configure），界面给出指引
    */
-  configKind: 'qwen-env' | 'opencode-json' | 'none'
+  configKind: 'qwen-env' | 'opencode-json' | 'codex-config' | 'hermes-env' | 'none'
   /** 是否支持在启动器内完成厂商配置。 */
   configurable: boolean
+  /** 安装通道；缺省 npm。hermes-installer = 中文社区官方 PowerShell 安装脚本。 */
+  installKind?: 'npm' | 'hermes-installer'
 }
 
 /** agents.json 里的一条安装记录。 */
