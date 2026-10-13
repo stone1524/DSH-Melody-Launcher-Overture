@@ -1,4 +1,4 @@
-import { Check, Folder, Gamepad2, Globe, Info, LoaderCircle, Palette, Rocket, Wrench, X } from 'lucide-react'
+import { Check, Folder, Gamepad2, Globe, HardDriveDownload, Info, LoaderCircle, Package, Palette, Rocket, Wrench, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import packageMetadata from '../../../package.json'
 import { useLauncherApi } from '../../api/client'
@@ -15,6 +15,8 @@ interface SettingsDialogProps {
   busy: boolean
   onClose: () => void
   onSave: (settings: AppSettings) => void
+  /** 跳转到收进设置的管理页（整合包/DSH 版本）：关对话框再换页。 */
+  onNavigateManage: (tab: 'packs' | 'versions') => void
 }
 
 const UI_THEMES: Array<{ id: UiTheme; label: string }> = [
@@ -39,7 +41,7 @@ function SettingsGroup({ icon, title, desc, children }: { icon: ReactNode; title
   )
 }
 
-export function SettingsDialog({ settings, busy, onClose, onSave }: SettingsDialogProps) {
+export function SettingsDialog({ settings, busy, onClose, onSave, onNavigateManage }: SettingsDialogProps) {
   const api = useLauncherApi()
   const [draft, setDraft] = useState(settings)
   // 参数在界面上是一整行文本，保存时才切成数组。
@@ -59,6 +61,16 @@ export function SettingsDialog({ settings, busy, onClose, onSave }: SettingsDial
       <section className="modal settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <header><div><Gamepad2 size={19} /><h2 id="settings-title">启动器设置</h2></div><button type="button" className="icon-button settings-close-button" onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); onClose() }} aria-label="关闭设置"><X size={18} /></button></header>
         <div className="modal-content settings-groups">
+          <SettingsGroup icon={<Wrench size={16} />} title="管理入口" desc="整合包与 DSH 版本已从侧栏收进这里，点按直达对应管理页。">
+            <div className="settings-manage-entries">
+              <button type="button" className="secondary-button" onClick={() => { onClose(); onNavigateManage('packs') }}>
+                <Package size={14} />整合包管理
+              </button>
+              <button type="button" className="secondary-button" onClick={() => { onClose(); onNavigateManage('versions') }}>
+                <HardDriveDownload size={14} />DSH 版本管理
+              </button>
+            </div>
+          </SettingsGroup>
           <SettingsGroup icon={<Palette size={16} />} title="外观" desc="界面主题色，保存后立即生效。">
             <div className="theme-options" role="radiogroup" aria-label="界面主题">
               {UI_THEMES.map(theme => (

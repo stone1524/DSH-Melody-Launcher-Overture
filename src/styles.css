@@ -806,7 +806,7 @@ input:focus-visible {
   display: grid;
   flex: 1;
   min-height: 0;
-  grid-template-columns: minmax(320px, 44%) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: 14px;
   padding: 14px;
   overflow: hidden;
@@ -832,56 +832,19 @@ input:focus-visible {
   letter-spacing: 0.1em;
 }
 
-.hub-start-panel .hub-panel-head { color: var(--ink); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.hub-feed-panel .hub-panel-head { color: var(--ink); background: color-mix(in srgb, var(--blue) 16%, var(--surface)); }
 
-.hub-start-body {
-  display: flex;
+.hub-feed-body {
   flex: 1;
-  flex-direction: column;
-  gap: 12px;
   min-height: 0;
-  padding: 14px;
+  overflow-y: auto;
 }
 
-.hub-start-state {
-  display: grid;
-  gap: 7px;
-  padding: 10px 12px;
-  border: 2px solid var(--line);
-  background: var(--surface-soft);
-  font-size: 12px;
-}
-
-.hub-start-state-row { display: flex; gap: 10px; align-items: baseline; }
-.hub-start-state-row b { flex: none; min-width: 48px; color: var(--muted); font-size: 11px; }
-.hub-start-state-row span:last-child { color: var(--ink); font-weight: 600; }
-.hub-state-warn { color: var(--amber) !important; }
-.hub-state-run { color: var(--accent) !important; }
-
-.hub-start-body .launcher-start-button { flex: none; min-height: 86px; }
-
-.hub-start-sub { display: flex; gap: 8px; }
-
-.hub-start-sub-button {
-  display: inline-flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 2px solid var(--line-strong);
-  color: var(--ink);
-  background: var(--surface-soft);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.hub-start-sub-button:hover { border-color: var(--accent); color: var(--accent); }
+.hub-feed-body .widget-zone { height: 100%; }
 
 .hub-agents-panel { padding-bottom: 6px; }
 
-.hub-agents-panel .hub-panel-head { color: var(--ink); background: color-mix(in srgb, var(--blue) 16%, var(--surface)); }
+.hub-agents-panel .hub-panel-head { color: var(--ink); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
 
 .hub-agents-grid {
   display: grid;
@@ -964,17 +927,67 @@ input:focus-visible {
   cursor: pointer;
 }
 
-.hub-ticker {
+/* START 横条：状态行横排 + 大按钮 + 子动作，压在页面底部。 */
+.hub-start-bar {
+  display: flex;
   flex: none;
-  height: 150px;
+  align-items: center;
+  gap: 16px;
   margin: 0 14px 14px;
+  padding: 12px 16px;
   border: 3px solid #000;
   background: var(--surface);
   box-shadow: inset 0 0 0 2px var(--surface-strong), 5px 5px 0 rgba(0, 0, 0, 0.45);
-  overflow: hidden;
 }
 
-.hub-ticker .widget-zone { height: 100%; }
+.hub-start-bar-head {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-right: 2px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.hub-start-bar-state {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+
+.hub-start-bar .launcher-start-button { flex: none; min-width: 230px; min-height: 74px; }
+
+.hub-start-state-row { display: flex; gap: 10px; align-items: baseline; }
+.hub-start-state-row b { flex: none; min-width: 48px; color: var(--muted); font-size: 11px; }
+.hub-start-state-row span:last-child { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-state-warn { color: var(--amber) !important; }
+.hub-state-run { color: var(--accent) !important; }
+
+.hub-start-sub-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 13px;
+  border: 2px solid var(--line-strong);
+  color: var(--ink);
+  background: var(--surface-soft);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hub-start-sub-button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 设置对话框里的管理入口（整合包/DSH 版本从侧栏收进来的那两个）。 */
+.settings-manage-entries { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ===== 首页「Agent 速装」网格：六工具与 DSH 平级露出 ===== */
 .agent-quick {

@@ -9,16 +9,24 @@ export interface HomeTabDefinition {
   label: string
 }
 
-/** 启动页之后紧跟整合包：整合包环境是这台启动器的核心对象，优先于其它面板。 */
+/**
+ * 侧栏显示的导航（Agent Hub Edition 精简）：启动 / Agent 工具 / 插件 / 技能 / 预设。
+ * 整合包与 DSH 版本两个管理页不在侧栏露出——入口收进「设置」对话框，
+ * 页面本体仍可渲染（HOME_TAB_ORDER 保留全部，keep-mounted 与跳转同源）。
+ */
 export const HOME_TABS: ReadonlyArray<HomeTabDefinition> = [
   { id: 'start', label: '启动' },
-  { id: 'packs', label: '整合包' },
   { id: 'agents', label: 'Agent 工具' },
-  { id: 'versions', label: 'DSH版本' },
   { id: 'plugins', label: '插件' },
   { id: 'skills', label: '技能' },
   { id: 'presets', label: '预设' },
 ]
 
-/** 面板挂载顺序，派生自 HOME_TABS。 */
-export const HOME_TAB_ORDER: HomeTab[] = HOME_TABS.map(tab => tab.id)
+/** 面板挂载顺序（含不在侧栏露出的管理页），派生自全量 tab 集。 */
+export const HOME_TAB_ORDER: HomeTab[] = [...HOME_TABS.map(tab => tab.id), 'packs', 'versions']
+
+/** 「设置」对话框里的管理入口：收进设置的其余页面。 */
+export const SETTINGS_MANAGE_ENTRIES: ReadonlyArray<HomeTabDefinition> = [
+  { id: 'packs', label: '整合包管理' },
+  { id: 'versions', label: 'DSH 版本管理' },
+]

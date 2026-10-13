@@ -253,6 +253,7 @@ function LauncherShell() {
           busy={store.busy === BUSY.settings || profileMutationLocked}
           onClose={() => setSettingsOpen(false)}
           onSave={async next => { if (await store.saveSettings(next)) setSettingsOpen(false) }}
+          onNavigateManage={tab => { setSettingsOpen(false); navigation.goHome(tab) }}
         />
       )}
       {packInstall.phase !== 'idle' && (

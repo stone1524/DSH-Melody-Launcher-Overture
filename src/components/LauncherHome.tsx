@@ -119,74 +119,73 @@ export function LauncherHome({
       </header>
 
       <div className="hub-main">
-        <section className="hub-panel hub-start-panel">
-          <div className="hub-panel-head">▶ START · DEEPSEEK HARNESS</div>
-          <div className="hub-start-body">
-            <div className="hub-start-state">
-              <span className="hub-start-state-row">
-                <b>DSH</b>
-                {dshInstallation.installed
-                  ? <span>v{dshInstallation.version ?? '?'} · 本体就绪</span>
-                  : <span className="hub-state-warn">未安装 · 首次使用需下载</span>}
-              </span>
-              <span className="hub-start-state-row">
-                <b>整合包</b>
-                {activePack
-                  ? <span>{activePack.name}{activePack.dshVersion ? ` · DSH ${activePack.dshVersion}` : ''}</span>
-                  : <span className="hub-state-warn">还没有整合包</span>}
-              </span>
-              <span className="hub-start-state-row">
-                <b>状态</b>
-                {runtime.running
-                  ? <span className="hub-state-run">运行中 · {runtime.url ?? '本地服务'}</span>
-                  : <span>待命</span>}
-              </span>
-            </div>
-            <button
-              type="button"
-              className={`launcher-start-button ${runtime.running ? 'stop' : ''}`}
-              onClick={handleStart}
-              disabled={busy}
-              title={noPack ? '先到「整合包」页新建或导入一个整合包' : desktopInstalled ? '检测到官方桌面端，直接唤醒' : undefined}
-            >
-              {busy ? <LoaderCircle className="spin" size={24} /> : noPack ? <Package size={24} /> : runtime.running ? <CircleStop size={24} /> : desktopInstalled ? <MonitorCheck size={24} /> : needsInstallation ? <Download size={24} /> : <Play size={25} fill="currentColor" />}
-              <span>
-                <small>{startHint}</small>
-                <strong>{startLabel}</strong>
-              </span>
-            </button>
-            <div className="hub-start-sub">
-              <button type="button" className="hub-start-sub-button" onClick={onVersionSelect} title={activePack ? '切换到其它整合包' : '创建或导入整合包'}>
-                <Package size={14} />{activePack ? '切换整合包' : '新建整合包'}
-              </button>
-              {runtime.running && runtime.url && (
-                <button type="button" className="hub-start-sub-button" onClick={onOpenWeb} disabled={busy} title="在浏览器中重新打开 DSH 网页工作台">
-                  <SquareArrowOutUpRight size={14} />打开网页
-                </button>
-              )}
-            </div>
+        {/* 左：快报面板（AI 日报/更新提示），给足高度——内容型信息值得大版面。 */}
+        <section className="hub-panel hub-feed-panel">
+          <div className="hub-panel-head">快报 · 更新与 AI 日报</div>
+          <div className="hub-feed-body">
+            <WidgetZone
+              dshUpdate={dshUpdate}
+              launcherUpdate={launcherUpdate}
+              busy={busy}
+              dshVersion={dshInstallation.version ?? null}
+              bundleCount={bundleCount}
+              pluginCount={pluginCount}
+              skillCount={skillCount}
+              presetCount={presetCount}
+              onUpdateDsh={onUpdateDsh}
+              onOpenLauncherUpdate={onOpenLauncherUpdate}
+              onNavigateTab={onNavigateTab}
+            />
           </div>
         </section>
 
+        {/* 右：Agent 速装网格。 */}
         <section className="hub-panel hub-agents-panel">
           <AgentQuickStrip dshInstallation={dshInstallation} onNavigateTab={onNavigateTab} />
         </section>
       </div>
 
-      <div className="hub-ticker">
-        <WidgetZone
-          dshUpdate={dshUpdate}
-          launcherUpdate={launcherUpdate}
-          busy={busy}
-          dshVersion={dshInstallation.version ?? null}
-          bundleCount={bundleCount}
-          pluginCount={pluginCount}
-          skillCount={skillCount}
-          presetCount={presetCount}
-          onUpdateDsh={onUpdateDsh}
-          onOpenLauncherUpdate={onOpenLauncherUpdate}
-          onNavigateTab={onNavigateTab}
-        />
+      {/* 底：START 横条。整合包默认用官方包自动导入，不在此暴露切换入口（管理收进设置）。 */}
+      <div className="hub-start-bar">
+        <div className="hub-start-bar-head">▶ START · DEEPSEEK HARNESS</div>
+        <div className="hub-start-bar-state">
+          <span className="hub-start-state-row">
+            <b>DSH</b>
+            {dshInstallation.installed
+              ? <span>v{dshInstallation.version ?? '?'} · 就绪</span>
+              : <span className="hub-state-warn">未安装</span>}
+          </span>
+          <span className="hub-start-state-row">
+            <b>整合包</b>
+            {activePack
+              ? <span>{activePack.name}{activePack.dshVersion ? ` · DSH ${activePack.dshVersion}` : ''}</span>
+              : <span className="hub-state-warn">首次启动自动导入官方包</span>}
+          </span>
+          <span className="hub-start-state-row">
+            <b>状态</b>
+            {runtime.running
+              ? <span className="hub-state-run">运行中</span>
+              : <span>待命</span>}
+          </span>
+        </div>
+        <button
+          type="button"
+          className={`launcher-start-button ${runtime.running ? 'stop' : ''}`}
+          onClick={handleStart}
+          disabled={busy}
+          title={noPack ? '首次启动会自动导入官方整合包' : desktopInstalled ? '检测到官方桌面端，直接唤醒' : undefined}
+        >
+          {busy ? <LoaderCircle className="spin" size={24} /> : noPack ? <Package size={24} /> : runtime.running ? <CircleStop size={24} /> : desktopInstalled ? <MonitorCheck size={24} /> : needsInstallation ? <Download size={24} /> : <Play size={25} fill="currentColor" />}
+          <span>
+            <small>{startHint}</small>
+            <strong>{startLabel}</strong>
+          </span>
+        </button>
+        {runtime.running && runtime.url && (
+          <button type="button" className="hub-start-sub-button" onClick={onOpenWeb} disabled={busy} title="在浏览器中重新打开 DSH 网页工作台">
+            <SquareArrowOutUpRight size={14} />打开网页
+          </button>
+        )}
       </div>
     </div>
   )
