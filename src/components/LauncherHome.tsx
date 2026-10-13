@@ -67,7 +67,7 @@ export function LauncherHome({
     <div className="launcher-home">
       <section className="home-brand">
         <div className="home-brand-head">
-          <img className="home-brand-logo" src={`${import.meta.env.BASE_URL}whale-avatar.svg`} alt="" width={112} height={112} draggable={false} />
+          <img className="home-brand-logo" src={`${import.meta.env.BASE_URL}whale-avatar.png`} alt="" width={112} height={112} draggable={false} />
           <h1 className="home-brand-name">
             <strong>DSH</strong>
             <span>Melody Launcher</span>
