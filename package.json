@@ -65,7 +65,7 @@
   },
   "build": {
     "appId": "com.local.dshlauncher",
-    "productName": "DSH Launcher",
+    "productName": "Agent Hub",
     "asar": true,
     "directories": {
       "output": "release"
@@ -93,7 +93,7 @@
       "target": [
         "portable"
       ],
-      "artifactName": "DSH-Launcher-${version}-portable.${ext}"
+      "artifactName": "Agent-Hub-${version}-portable.${ext}"
     }
   }
 }
