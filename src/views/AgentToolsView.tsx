@@ -57,113 +57,119 @@ export function AgentToolsView() {
     }
   }
 
-  if (loading && state === null) return <div className="settings-hint">正在读取 Agent 工具目录…</div>
-  if (state === null) return <div className="settings-empty"><Bot size={20} />{error ?? '目录读取失败。'}</div>
+  if (loading && state === null) {
+    return <div className="home-tab-page"><main className="settings-content"><div className="settings-hint">正在读取 Agent 工具目录…</div></main></div>
+  }
+  if (state === null) {
+    return <div className="home-tab-page"><main className="settings-content"><div className="settings-empty"><Bot size={20} />{error ?? '目录读取失败。'}</div></main></div>
+  }
 
   return (
-    <>
-      <div className="settings-panel-heading">
-        <div className="settings-panel-title">
-          <Bot size={17} /><span>Agent 工具</span>
-        </div>
-        <div className="settings-market-heading-actions">
-          <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => void reload()}>
-            <RefreshCw size={14} className={loading ? 'spin' : undefined} />刷新
-          </button>
-        </div>
-      </div>
-      <div className="settings-hint">
-        这些命令行 Agent 装在<strong>启动器自己的目录</strong>里，不影响系统全局 npm；安装走国内镜像，断点可重试。
-        配置模型时 API Key 由你本人输入，只写进该工具自己的配置文件，启动器不留存、不上报。
-      </div>
-      {error && <div className="error-banner"><span>{error}</span><button type="button" onClick={() => setError(null)}>忽略</button></div>}
-
-      <div className="settings-list">
-        {state.entries.map(entry => {
-          const { definition, record } = entry
-          const installing = busy === `install:${definition.id}`
-          const uninstalling = busy === `uninstall:${definition.id}`
-          const providerLabel = record?.configuredProvider
-            ? state.providers.find(provider => provider.id === record.configuredProvider)?.label ?? record.configuredProvider
-            : null
-          return (
-            <div key={definition.id} className={`settings-row ${installing || uninstalling ? 'is-working' : ''}`}>
-              <div className="settings-row-copy">
-                <strong>
-                  {definition.name}
-                  {record?.version && <span className="settings-count"> v{record.version}</span>}
-                </strong>
-                <span>{definition.tagline}</span>
-                <span className="agent-cli-audience">{definition.audience}</span>
-                {record && (
-                  <span className="agent-cli-status-line">
-                    {record.source === 'raw-installer'
-                      ? <><Check size={12} /> 官方安装向导已启动，请在向导中完成安装</>
-                      : providerLabel
-                        ? <><Check size={12} /> 已配置 {providerLabel}</>
-                        : definition.configurable ? '已安装，还没配置模型' : '已安装'}
-                  </span>
-                )}
-                {record?.source === 'offline-bundle' && (
-                  <span className="agent-cli-offline-badge">内置离线包 · 安装全程无需联网</span>
-                )}
-              </div>
-              <div className="settings-row-actions">
-                {installing || uninstalling
-                  ? <span className="agent-cli-busy"><LoaderCircle size={15} className="spin" />{installing ? '安装中…' : '卸载中…'}</span>
-                  : (
-                    <>
-                      {record
-                        ? (
-                          <>
-                            {definition.configurable && (
-                              <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => setConfigTarget(entry)}>
-                                <KeyRound size={14} />{providerLabel ? '重新配置' : '配置模型'}
-                              </button>
-                            )}
-                            {definition.installKind === 'raw-installer'
-                              ? <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => void act(`install:${definition.id}`, () => api.agentCliInstall(definition.id).then(result => setLogTail(result.logTail)))}>
-                                <ExternalLink size={14} />再次运行安装向导
-                              </button>
-                              : null}
-                            <button type="button" className="icon-button" title={`卸载 ${definition.name}`} aria-label={`卸载 ${definition.name}`} disabled={busy !== null} onClick={() => void act(`uninstall:${definition.id}`, () => api.agentCliUninstall(definition.id))}>
-                              <Trash2 size={16} />
-                            </button>
-                          </>
-                        )
-                        : <button type="button" className="primary-command" disabled={busy !== null} onClick={() => void act(`install:${definition.id}`, () => api.agentCliInstall(definition.id).then(result => setLogTail(result.logTail)))}>
-                          <Wrench size={14} />{definition.installKind === 'raw-installer' ? '运行安装向导' : '安装'}
-                        </button>}
-                    </>
-                  )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {logTail && logTail.length > 0 && (
-        <div className="agent-cli-log">
-          <div className="agent-cli-log-head">
-            <span>最近一次安装日志（尾部）</span>
-            <button type="button" className="icon-button" aria-label="收起日志" onClick={() => setLogTail(null)}><Trash2 size={13} /></button>
+    <div className="home-tab-page">
+      <main className="settings-content">
+        <div className="settings-panel-heading">
+          <div className="settings-panel-title">
+            <Bot size={17} /><span>Agent 工具</span>
           </div>
-          <pre>{logTail.join('\n')}</pre>
+          <div className="settings-market-heading-actions">
+            <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => void reload()}>
+              <RefreshCw size={14} className={loading ? 'spin' : undefined} />刷新
+            </button>
+          </div>
         </div>
-      )}
+        <div className="settings-hint">
+          这些命令行 Agent 装在<strong>启动器自己的目录</strong>里，不影响系统全局 npm；安装走国内镜像，断点可重试。
+          配置模型时 API Key 由你本人输入，只写进该工具自己的配置文件，启动器不留存、不上报。
+        </div>
+        {error && <div className="error-banner"><span>{error}</span><button type="button" onClick={() => setError(null)}>忽略</button></div>}
 
-      {configTarget && (
-        <AgentCliConfigDialog
-          entry={configTarget}
-          providers={state.providers}
-          onClose={() => setConfigTarget(null)}
-          onSaved={() => {
-            setConfigTarget(null)
-            void reload()
-          }}
-        />
-      )}
-    </>
+        <div className="settings-list">
+          {state.entries.map(entry => {
+            const { definition, record } = entry
+            const installing = busy === `install:${definition.id}`
+            const uninstalling = busy === `uninstall:${definition.id}`
+            const providerLabel = record?.configuredProvider
+              ? state.providers.find(provider => provider.id === record.configuredProvider)?.label ?? record.configuredProvider
+              : null
+            return (
+              <div key={definition.id} className={`settings-row ${installing || uninstalling ? 'is-working' : ''}`}>
+                <div className="settings-row-copy">
+                  <strong>
+                    {definition.name}
+                    {record?.version && <span className="settings-count"> v{record.version}</span>}
+                  </strong>
+                  <span>{definition.tagline}</span>
+                  <span className="agent-cli-audience">{definition.audience}</span>
+                  {record && (
+                    <span className="agent-cli-status-line">
+                      {record.source === 'raw-installer'
+                        ? <><Check size={12} /> 官方安装向导已启动，请在向导中完成安装</>
+                        : providerLabel
+                          ? <><Check size={12} /> 已配置 {providerLabel}</>
+                          : definition.configurable ? '已安装，还没配置模型' : '已安装'}
+                    </span>
+                  )}
+                  {record?.source === 'offline-bundle' && (
+                    <span className="agent-cli-offline-badge">内置离线包 · 安装全程无需联网</span>
+                  )}
+                </div>
+                <div className="settings-row-actions">
+                  {installing || uninstalling
+                    ? <span className="agent-cli-busy"><LoaderCircle size={15} className="spin" />{installing ? '安装中…' : '卸载中…'}</span>
+                    : (
+                      <>
+                        {record
+                          ? (
+                            <>
+                              {definition.configurable && (
+                                <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => setConfigTarget(entry)}>
+                                  <KeyRound size={14} />{providerLabel ? '重新配置' : '配置模型'}
+                                </button>
+                              )}
+                              {definition.installKind === 'raw-installer'
+                                ? <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => void act(`install:${definition.id}`, () => api.agentCliInstall(definition.id).then(result => setLogTail(result.logTail)))}>
+                                  <ExternalLink size={14} />再次运行安装向导
+                                </button>
+                                : null}
+                              <button type="button" className="icon-button" title={`卸载 ${definition.name}`} aria-label={`卸载 ${definition.name}`} disabled={busy !== null} onClick={() => void act(`uninstall:${definition.id}`, () => api.agentCliUninstall(definition.id))}>
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          )
+                          : <button type="button" className="primary-command" disabled={busy !== null} onClick={() => void act(`install:${definition.id}`, () => api.agentCliInstall(definition.id).then(result => setLogTail(result.logTail)))}>
+                            <Wrench size={14} />{definition.installKind === 'raw-installer' ? '运行安装向导' : '安装'}
+                          </button>}
+                      </>
+                    )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {logTail && logTail.length > 0 && (
+          <div className="agent-cli-log">
+            <div className="agent-cli-log-head">
+              <span>最近一次安装日志（尾部）</span>
+              <button type="button" className="icon-button" aria-label="收起日志" onClick={() => setLogTail(null)}><Trash2 size={13} /></button>
+            </div>
+            <pre>{logTail.join('\n')}</pre>
+          </div>
+        )}
+
+        {configTarget && (
+          <AgentCliConfigDialog
+            entry={configTarget}
+            providers={state.providers}
+            onClose={() => setConfigTarget(null)}
+            onSaved={() => {
+              setConfigTarget(null)
+              void reload()
+            }}
+          />
+        )}
+      </main>
+    </div>
   )
 }
 

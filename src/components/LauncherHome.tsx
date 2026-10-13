@@ -1,11 +1,11 @@
-import { Bot, Check, ChevronRight, CircleStop, Download, ExternalLink, LoaderCircle, Package, Play, SquareArrowOutUpRight } from 'lucide-react'
+import { Bot, Check, ChevronRight, CircleStop, Download, ExternalLink, LoaderCircle, MonitorCheck, Package, Play, SquareArrowOutUpRight } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import packageMetadata from '../../package.json'
 import { useLauncherApi } from '../api/client'
 import { APP_BRAND_NAME } from '../constants'
 import { WidgetZone } from './WidgetZone'
 import { errorText } from '../lib/format'
-import type { AgentCliListResult, DshInstallationStatus, DshUpdateStatus, HomeTab, InstallProgress, InstalledApplicationAddon, LauncherUpdateStatus, RuntimeState } from '../types'
+import type { AgentCliListResult, DesktopPluginState, DshInstallationStatus, DshUpdateStatus, HomeTab, InstallProgress, InstalledApplicationAddon, LauncherUpdateStatus, RuntimeState } from '../types'
 
 /**
  * 「启动」tab：Agent Hub 首页。左列品牌（鲸鱼娘/名称/版本），
@@ -62,9 +62,51 @@ export function LauncherHome({
   onOpenLauncherUpdate,
   onNavigateTab,
 }: LauncherHomeProps) {
+  const api = useLauncherApi()
   const needsInstallation = !dshInstallation.installed && !activeRuntimeReplacement
   // 零包引导态：没有激活包（通常是删光了整合包）时，首页两个按钮都指向整合包页引导新建。
   const noPack = !activePack && !runtime.running && !busy
+  // 官方桌面端检测：装了桌面端，大按钮就直接唤醒它（而不是起网页版）。
+  const [desktop, setDesktop] = useState<DesktopPluginState | null>(null)
+  useEffect(() => {
+    void api.desktopStatus().then(setDesktop).catch(() => setDesktop(null))
+  }, [api])
+  const desktopInstalled = Boolean(desktop?.installed)
+
+  // 大按钮动作分流：运行中→停止；零包→引导建包；有桌面端→唤桌面；其余→网页版（含首装下载）。
+  const handleStart = () => {
+    if (!noPack && desktopInstalled && !runtime.running) {
+      void api.desktopOpen()
+      return
+    }
+    if (noPack) {
+      onVersionSelect()
+      return
+    }
+    onToggleRuntime()
+  }
+  const startLabel = runtime.running
+    ? `停止 ${runtime.applicationAddonName ?? 'DSH'}`
+    : noPack
+      ? '新建整合包'
+      : installingDsh
+        ? installProgress?.indeterminate ? '安装进行中' : `安装 DSH ${installProgress?.percent ?? 0}%`
+        : needsInstallation
+          ? '下载安装 DSH'
+          : desktopInstalled
+            ? '启动 DSH 桌面端'
+            : busy ? '请稍候…' : activeRuntimeReplacement ? `启动 ${activeRuntimeReplacement.name}` : '启动 DSH'
+  const startHint = busy
+    ? (installingDsh ? installProgress?.message ?? '正在准备本地 DSH' : runtime.running ? '正在停止本地服务' : launchActivity ?? '正在启动本地工作台')
+    : noPack
+      ? '先创建一个整合包环境'
+      : runtime.running
+        ? '结束本地服务'
+        : needsInstallation
+          ? '首次使用需要完成本地部署'
+          : desktopInstalled
+            ? '检测到官方桌面端，直接唤醒'
+            : activeRuntimeReplacement ? '由应用加载项托管 DSH' : '启动本地工作台'
 
   return (
     <div className="launcher-home">
@@ -83,7 +125,7 @@ export function LauncherHome({
       </section>
 
       <section className="home-side">
-        <AgentQuickStrip onNavigateTab={onNavigateTab} />
+        <AgentQuickStrip dshInstallation={dshInstallation} onNavigateTab={onNavigateTab} />
         <WidgetZone
           dshUpdate={dshUpdate}
           launcherUpdate={launcherUpdate}
@@ -102,14 +144,14 @@ export function LauncherHome({
           <button
             type="button"
             className={`launcher-start-button ${runtime.running ? 'stop' : ''}`}
-            onClick={noPack ? onVersionSelect : onToggleRuntime}
+            onClick={handleStart}
             disabled={busy}
-            title={noPack ? '先到「整合包」页新建或导入一个整合包' : undefined}
+            title={noPack ? '先到「整合包」页新建或导入一个整合包' : desktopInstalled ? '检测到官方桌面端，直接唤醒' : undefined}
           >
-            {busy ? <LoaderCircle className="spin" size={24} /> : noPack ? <Package size={24} /> : runtime.running ? <CircleStop size={24} /> : needsInstallation ? <Download size={24} /> : <Play size={25} fill="currentColor" />}
+            {busy ? <LoaderCircle className="spin" size={24} /> : noPack ? <Package size={24} /> : runtime.running ? <CircleStop size={24} /> : desktopInstalled ? <MonitorCheck size={24} /> : needsInstallation ? <Download size={24} /> : <Play size={25} fill="currentColor" />}
             <span>
-              <small>{busy ? (installingDsh ? installProgress?.message ?? '正在准备本地 DSH' : runtime.running ? '正在停止本地服务' : launchActivity ?? '正在启动本地工作台') : noPack ? '先创建一个整合包环境' : runtime.running ? '结束本地服务' : needsInstallation ? '首次使用需要完成本地部署' : activeRuntimeReplacement ? '由应用加载项托管 DSH' : '启动本地工作台'}</small>
-              <strong>{runtime.running ? `停止 ${runtime.applicationAddonName ?? 'DSH'}` : noPack ? '新建整合包' : installingDsh ? installProgress?.indeterminate ? '安装进行中' : `安装 DSH ${installProgress?.percent ?? 0}%` : needsInstallation ? '下载安装 DSH' : busy ? '请稍候…' : activeRuntimeReplacement ? `启动 ${activeRuntimeReplacement.name}` : '启动 DSH'}</strong>
+              <small>{startHint}</small>
+              <strong>{startLabel}</strong>
             </span>
           </button>
           {/* 运行中的第二分段：网页窗口被关掉后，这里是一键找回的入口（与左侧停止段等宽同构）。 */}
@@ -138,10 +180,10 @@ export function LauncherHome({
 }
 
 /**
- * 「Agent 速装」网格：六个 CLI/桌面端工具平铺在首页，状态与一键安装就地可见。
+ * 「Agent 速装」网格：DSH 领衔 + 六个 CLI/桌面端工具平铺在首页，状态与一键安装就地可见。
  * 自取数（同 DesktopPackRow 的自足模式）；配置等重操作引导去「Agent 工具」页。
  */
-function AgentQuickStrip({ onNavigateTab }: { onNavigateTab: (tab: HomeTab) => void }) {
+function AgentQuickStrip({ dshInstallation, onNavigateTab }: { dshInstallation: DshInstallationStatus; onNavigateTab: (tab: HomeTab) => void }) {
   const api = useLauncherApi()
   const [state, setState] = useState<AgentCliListResult | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -181,6 +223,23 @@ function AgentQuickStrip({ onNavigateTab }: { onNavigateTab: (tab: HomeTab) => v
       </div>
       {error && <div className="agent-quick-error">{error}</div>}
       <div className="agent-quick-grid">
+        {/* DSH 领衔卡：安装/启动走下方大按钮与整合包页，卡片点击跳「整合包」。 */}
+        <button
+          type="button"
+          className={`agent-quick-card ${dshInstallation.installed ? 'installed' : ''}`}
+          onClick={() => onNavigateTab('packs')}
+          title="DeepSeek Harness：本启动器最深度的本地工作台，安装与启动在下方大按钮"
+        >
+          <span className="agent-quick-name">
+            DeepSeek Harness
+            <i className="agent-quick-offline">本体</i>
+          </span>
+          <span className="agent-quick-state">
+            {dshInstallation.installed
+              ? <><Check size={11} />已安装{dshInstallation.version ? ` v${dshInstallation.version}` : ''}</>
+              : <>未安装 · 下方大按钮</>}
+          </span>
+        </button>
         {(state?.entries ?? []).map(({ definition, record }) => {
           const working = busyId === definition.id
           return (
