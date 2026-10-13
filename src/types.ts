@@ -1,6 +1,6 @@
 export type WindowMode = 'launcher' | 'manager'
 /** 一级导航 tab：启动页 + 五个 C 端面板（原二级设置页拍平）。顺序与显示名见 src/lib/nav.ts。 */
-export type HomeTab = 'start' | 'versions' | 'plugins' | 'skills' | 'presets' | 'packs'
+export type HomeTab = 'start' | 'versions' | 'plugins' | 'skills' | 'presets' | 'packs' | 'agents'
 export type UiTheme = 'deepseek' | 'night' | 'macos' | 'macos-dark'
 
 export interface AppSettings {
@@ -1244,6 +1244,97 @@ export interface DshMarketProgress {
   totalBytes?: number | null
 }
 
+// ===== Agent CLI 工具（Agent Hub Edition 新增）=====
+
+/** 内置目录里的 Agent CLI id。 */
+export type AgentCliId = 'qwen-code' | 'opencode' | 'openclaw'
+
+/**
+ * 国产模型服务商预设（OpenAI 兼容端点）。
+ * baseUrl 给到 /v4、/v1 这类完整兼容根路径，直接拼 /chat/completions 可用。
+ */
+export interface AgentCliProviderPreset {
+  id: 'deepseek' | 'zhipu' | 'qwen' | 'kimi'
+  label: string
+  baseUrl: string
+  /** 连通性测试与默认配置用的模型名。 */
+  model: string
+  /** 申请入口，配置向导里展示给客户。 */
+  consoleUrl: string
+}
+
+/** 内置目录条目：主进程代码持有，渲染层经 list 拿到只读副本。 */
+export interface AgentCliDefinition {
+  id: AgentCliId
+  name: string
+  tagline: string
+  /** 适用人群一句话（选型小抄的界面版）。 */
+  audience: string
+  npmPackage: string
+  /** 安装后验证版本用的 CLI 参数。 */
+  versionArgs: string[]
+  /**
+   * 配置落盘方式：
+   * - qwen-env：写 %USERPROFILE%\.qwen\.env（OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL）
+   * - opencode-json：写 %USERPROFILE%\.config\opencode\opencode.json（provider + model）
+   * - none：暂无向导化配置（如 openclaw 需交互式 configure），界面给出指引
+   */
+  configKind: 'qwen-env' | 'opencode-json' | 'none'
+  /** 是否支持在启动器内完成厂商配置。 */
+  configurable: boolean
+}
+
+/** agents.json 里的一条安装记录。 */
+export interface AgentCliInstallRecord {
+  id: AgentCliId
+  /** npm 实际装到的版本（install 后回读）。 */
+  version: string | null
+  installedAt: string
+  updatedAt: string
+  configuredProvider?: string
+  configuredAt?: string
+}
+
+/** 渲染层列表行：目录定义 + 本机状态合并视图。 */
+export interface AgentCliEntry {
+  definition: AgentCliDefinition
+  record: AgentCliInstallRecord | null
+}
+
+export interface AgentCliListResult {
+  entries: AgentCliEntry[]
+  providers: AgentCliProviderPreset[]
+}
+
+export interface AgentCliInstallResult {
+  entry: AgentCliEntry
+  /** npm 安装日志尾部（诊断用）。 */
+  logTail: string[]
+}
+
+export interface AgentCliConfigureRequest {
+  id: AgentCliId
+  providerId: AgentCliProviderPreset['id']
+  /** 客户本人在启动器内输入；只写进该 CLI 自己的配置文件。 */
+  apiKey: string
+  baseUrl?: string
+  model?: string
+}
+
+export interface AgentCliProviderTestInput {
+  providerId: AgentCliProviderPreset['id']
+  apiKey: string
+  baseUrl?: string
+  model?: string
+}
+
+export interface AgentCliProviderTestResult {
+  ok: boolean
+  latencyMs: number | null
+  /** 失败时的简短中文原因；成功为空。 */
+  error?: string
+}
+
 export interface LauncherApi {
   getSettings(): Promise<AppSettings>
   saveSettings(settings: AppSettings): Promise<AppSettings>
@@ -1430,6 +1521,18 @@ export interface LauncherApi {
   onPluginTrialEvent(listener: (result: PluginTrialResult) => void): () => void
   onAiInstallEvent(listener: (event: AiInstallEvent) => void): () => void
   onAiSessionEvent(listener: (event: AiSessionEvent) => void): () => void
+
+  // ===== Agent CLI 工具（Agent Hub Edition 新增）=====
+  /** 列出内置 Agent CLI 目录与本机安装/配置状态。 */
+  agentCliList(): Promise<AgentCliListResult>
+  /** 安装一个 Agent CLI（便携 Node + npm 全局装进启动器私有前缀）。 */
+  agentCliInstall(id: string): Promise<AgentCliInstallResult>
+  /** 卸载一个 Agent CLI。 */
+  agentCliUninstall(id: string): Promise<AgentCliListResult>
+  /** 写入厂商配置（API Key 只进该 CLI 自己的配置文件，不在注册表留存）。 */
+  agentCliConfigure(request: AgentCliConfigureRequest): Promise<AgentCliListResult>
+  /** 用给定 Key 做一次连通性测试（请求即用即弃，不落盘）。 */
+  agentCliTestProvider(request: AgentCliProviderTestInput): Promise<AgentCliProviderTestResult>
 }
 
 declare global {

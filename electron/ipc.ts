@@ -38,6 +38,8 @@ import type { GitHubAuthService } from './github-auth'
 import { createLinkedComponentController } from './linked-components'
 import type { RuntimeVersionService } from './runtime-versions'
 import type { ProfileService } from './profile-service'
+import type { AgentCliManager } from './agent-cli/manager'
+import { isValidAgentCliId } from './agent-cli/registry'
 import { inspectPackZipFromPath } from './pack-zip'
 import { serializePackManifest } from './pack-manifest'
 import { ensureDshVersionInstalled } from './runtime-versions'
@@ -75,6 +77,8 @@ export interface IpcDependencies {
   recommendedWebUi: RecommendedWebUiService
   runtimeVersions: RuntimeVersionService
   profiles: ProfileService
+  /** Agent CLI 工具（Qwen Code / OpenCode / OpenClaw）管理器（Agent Hub Edition）。 */
+  agentCli: AgentCliManager
   /** skills.sh 索引磁盘缓存路径（userData/skills-sh-index.json）。 */
   skillsShIndexPath: string
   /** juya AI 日报 RSS 磁盘缓存路径（userData/juya-news-cache.json）。 */
@@ -92,7 +96,7 @@ export interface IpcDependencies {
 }
 
 export function registerIpcHandlers(deps: IpcDependencies): void {
-  const { settings, pluginReceiptsPath, runtime, installer, launcherUpdater, pluginTrial, aiInstaller, copilot, packManager, githubAuth, applicationAddons, catalogSync, dshMarket, desktopPlugins, recommendedWebUi, runtimeVersions, profiles, skillsShIndexPath, newsCachePath, restoreOfficialPack, listOfficialPackVersions, readOfficialPackStatus, installOfficialPackVersion } = deps
+  const { settings, pluginReceiptsPath, runtime, installer, launcherUpdater, pluginTrial, aiInstaller, copilot, packManager, githubAuth, applicationAddons, catalogSync, dshMarket, desktopPlugins, recommendedWebUi, runtimeVersions, profiles, skillsShIndexPath, newsCachePath, restoreOfficialPack, listOfficialPackVersions, readOfficialPackStatus, installOfficialPackVersion, agentCli } = deps
   const linkedComponents = createLinkedComponentController({
     readSettings: () => settings.read(),
     readProfile,
@@ -637,6 +641,42 @@ export function registerIpcHandlers(deps: IpcDependencies): void {
     return desktopPlugins.restoreMirror()
   })
   ipcMain.handle(IPC.desktopOpen, () => desktopPlugins.open())
+
+  // ===== Agent CLI 工具（Agent Hub Edition）：入参先校验 id，再进管理器。 =====
+  ipcMain.handle(IPC.agentCliList, () => agentCli.list())
+  ipcMain.handle(IPC.agentCliInstall, async (_event, id: unknown) => {
+    if (!isValidAgentCliId(id)) throw new Error('未知的 Agent CLI。')
+    return agentCli.install(id)
+  })
+  ipcMain.handle(IPC.agentCliUninstall, async (_event, id: unknown) => {
+    if (!isValidAgentCliId(id)) throw new Error('未知的 Agent CLI。')
+    return agentCli.uninstall(id)
+  })
+  ipcMain.handle(IPC.agentCliConfigure, async (_event, request: unknown) => {
+    if (!request || typeof request !== 'object') throw new Error('配置请求无效。')
+    const input = request as Record<string, unknown>
+    if (!isValidAgentCliId(input.id)) throw new Error('未知的 Agent CLI。')
+    if (typeof input.apiKey !== 'string' || !input.apiKey.trim()) throw new Error('请先输入 API Key。')
+    return agentCli.configure({
+      id: input.id,
+      apiKey: input.apiKey,
+      providerId: input.providerId as never,
+      ...(typeof input.baseUrl === 'string' ? { baseUrl: input.baseUrl } : {}),
+      ...(typeof input.model === 'string' ? { model: input.model } : {}),
+    })
+  })
+  ipcMain.handle(IPC.agentCliTestProvider, async (_event, request: unknown) => {
+    if (!request || typeof request !== 'object') throw new Error('测试请求无效。')
+    const input = request as Record<string, unknown>
+    if (typeof input.apiKey !== 'string' || !input.apiKey.trim()) throw new Error('请先输入 API Key。')
+    return agentCli.testProvider({
+      providerId: input.providerId as never,
+      apiKey: input.apiKey,
+      ...(typeof input.baseUrl === 'string' ? { baseUrl: input.baseUrl } : {}),
+      ...(typeof input.model === 'string' ? { model: input.model } : {}),
+    })
+  })
+
 
   ipcMain.handle(IPC.pluginsUninstall, async (_event, payload: string | { packageName: string; profileName?: string }) => {
     assertProfileMutationAvailable()

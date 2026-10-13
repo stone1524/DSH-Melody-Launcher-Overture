@@ -20,6 +20,7 @@ import type { HomeTab } from './types'
 // 启动页只看得到 LauncherHome；整合包/插件/技能/预设/版本这一整块面板（以及导入对话框）
 // 拆成按需加载的 chunk，首屏要解析的 JS 就少一截。
 const SettingsPanels = lazy(() => import('./views/SettingsView').then(module => ({ default: module.SettingsPanels })))
+const AgentToolsView = lazy(() => import('./views/AgentToolsView').then(module => ({ default: module.AgentToolsView })))
 const PackInstallDialog = lazy(() => import('./components/dialogs/PackInstallDialog').then(module => ({ default: module.PackInstallDialog })))
 const SessionImportDialog = lazy(() => import('./components/dialogs/SessionImportDialog').then(module => ({ default: module.SessionImportDialog })))
 const PackExportDialog = lazy(() => import('./components/dialogs/PackExportDialog').then(module => ({ default: module.PackExportDialog })))
@@ -139,8 +140,7 @@ function LauncherShell() {
             {HOME_TAB_ORDER.filter(tab => visitedTabs.current.has(tab)).map(tab => (
               <div key={tab} className={`home-tab-pane ${navigation.homeTab === tab ? '' : 'view-hidden'}`}>
                 {tab === 'start' ? (
-                  <LauncherHome
-                    runtime={store.runtime}
+                  <LauncherHome                    runtime={store.runtime}
                     dshInstallation={store.dshInstallation}
                     dshUpdate={store.dshUpdate}
                     launcherUpdate={store.launcherUpdate}
@@ -165,6 +165,10 @@ function LauncherShell() {
                     onNavigateTab={navigation.goHome}
                     onOpenSettings={() => setSettingsOpen(true)}
                   />
+                ) : tab === 'agents' ? (
+                  <Suspense fallback={null}>
+                    <AgentToolsView />
+                  </Suspense>
                 ) : (
                   <Suspense fallback={null}>
                     <SettingsPanels

@@ -6,6 +6,7 @@ import type {
   AiSessionCreateInput,
   AiSessionEvent,
   AiInstallStatus,
+  AgentCliListResult,
   AppSettings,
   CatalogAnalysisProgress,
   CatalogIndexEntry,
@@ -2127,4 +2128,52 @@ export const demoApi: LauncherApi = {
     aiSessionEventListeners.add(listener)
     return () => aiSessionEventListeners.delete(listener)
   },
+  // ===== Agent CLI（demo 态：展示目录 + 空安装记录，不执行真安装） =====
+  agentCliList: async () => {
+    await wait(200)
+    return agentCliDemoState()
+  },
+  agentCliInstall: async id => {
+    await wait(800)
+    const state = agentCliDemoState()
+    const target = state.entries.find(item => item.definition.id === id)
+    if (!target) throw new Error('未知的 Agent CLI。')
+    target.record = { id: target.definition.id, version: '0.0.0-demo', installedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    return { entry: target, logTail: ['[demo] 安装完成（演示数据）'] }
+  },
+  agentCliUninstall: async id => {
+    await wait(300)
+    const state = agentCliDemoState()
+    return { ...state, entries: state.entries.map(item => item.definition.id === id ? { ...item, record: null } : item) }
+  },
+  agentCliConfigure: async request => {
+    await wait(400)
+    const state = agentCliDemoState()
+    return { ...state, entries: state.entries.map(item => item.definition.id === request.id ? { ...item, record: item.record ? { ...item.record, configuredProvider: request.providerId, configuredAt: new Date().toISOString() } : null } : item) }
+  },
+  agentCliTestProvider: async () => {
+    await wait(900)
+    return { ok: true, latencyMs: 233 }
+  },
+}
+
+// demo 的 Agent CLI 状态要跨调用保持：安装/配置的结果要在刷新列表后仍然可见。
+let agentCliDemoCache: AgentCliListResult | null = null
+
+function agentCliDemoState(): AgentCliListResult {
+  if (agentCliDemoCache) return agentCliDemoCache
+  agentCliDemoCache = {
+    entries: [
+      { definition: { id: 'qwen-code', name: 'Qwen Code', tagline: '阿里官方命令行编程助手，免费额度大', audience: '新手首选', npmPackage: '@qwen-code/qwen-code', versionArgs: ['--version'], configKind: 'qwen-env', configurable: true }, record: null },
+      { definition: { id: 'opencode', name: 'OpenCode', tagline: '开源无锁定的终端编程 Agent', audience: '想自己挑模型', npmPackage: 'opencode-ai', versionArgs: ['--version'], configKind: 'opencode-json', configurable: true }, record: null },
+      { definition: { id: 'openclaw', name: 'OpenClaw', tagline: '开源个人智能体框架', audience: '尝鲜用户', npmPackage: 'openclaw', versionArgs: ['--version'], configKind: 'none', configurable: false }, record: null },
+    ],
+    providers: [
+      { id: 'deepseek', label: 'DeepSeek 开放平台', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', consoleUrl: 'https://platform.deepseek.com/' },
+      { id: 'zhipu', label: '智谱 BigModel', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-5.3', consoleUrl: 'https://open.bigmodel.cn/' },
+      { id: 'qwen', label: '阿里云百炼（通义）', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen3-coder-plus', consoleUrl: 'https://bailian.console.aliyun.com/' },
+      { id: 'kimi', label: 'Moonshot Kimi', baseUrl: 'https://api.moonshot.cn/v1', model: 'kimi-k2.5', consoleUrl: 'https://platform.moonshot.cn/' },
+    ],
+  }
+  return agentCliDemoCache
 }

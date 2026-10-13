@@ -1,4 +1,4 @@
-import { HardDriveDownload, Layers3, Package, Play, Puzzle, Settings, SlidersHorizontal, Sparkles, SquareArrowOutUpRight } from 'lucide-react'
+import { Bot, HardDriveDownload, Layers3, Package, Play, Puzzle, Settings, SlidersHorizontal, Sparkles, SquareArrowOutUpRight } from 'lucide-react'
 import { APP_BRAND_NAME } from '../constants'
 import { HOME_TABS } from '../lib/nav'
 import type { HomeTab } from '../types'
@@ -16,6 +16,7 @@ const TAB_ICONS: Record<HomeTab, typeof Play> = {
   plugins: Puzzle,
   skills: Sparkles,
   presets: SlidersHorizontal,
+  agents: Bot,
 }
 
 interface SidebarProps {

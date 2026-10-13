@@ -208,6 +208,11 @@ export const IPC = {
   windowMinimize: 'window:minimize',
   windowToggleMaximize: 'window:toggle-maximize',
   windowClose: 'window:close',
+  agentCliList: 'agent-cli:list',
+  agentCliInstall: 'agent-cli:install',
+  agentCliUninstall: 'agent-cli:uninstall',
+  agentCliConfigure: 'agent-cli:configure',
+  agentCliTestProvider: 'agent-cli:test-provider',
 } as const
 
 /** 主进程主动推送给渲染层的事件通道。 */

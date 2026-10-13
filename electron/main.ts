@@ -7,6 +7,7 @@ import type { AppSettings, OfficialPackRelease, OfficialPackStatus, PackInstallR
 import { ACP_RUNTIME_DIRNAME, CREDENTIALS_LOCK_DIRNAME, createAiInstaller, healCredentialsLock, type AiInstaller } from './ai-install'
 import { createApplicationAddonManager, type ApplicationAddonManager } from './application-addons'
 import { applyWindowMode, createMainWindow, createRendererChannel } from './app-window'
+import { createAgentCliManager, type AgentCliManager } from './agent-cli/manager'
 import { createCatalogSyncService, type CatalogSyncService } from './catalog-sync'
 import { createCopilotSessionManager, type CopilotSessionManager } from './copilot-sessions'
 import { createDshMarketService, type DshMarketService } from './dsh-market'
@@ -109,6 +110,8 @@ interface Services {
   recommendedWebUi: RecommendedWebUiService
   runtimeVersions: RuntimeVersionService
   profiles: ProfileService
+  /** Agent CLI 工具（Qwen Code / OpenCode / OpenClaw）（Agent Hub Edition）。 */
+  agentCli: AgentCliManager
   profilePoolReady: Promise<void>
   /** 手动恢复官方整合包（整合包页按钮）；失败抛错给渲染层。 */
   restoreOfficialPack: () => Promise<PackInstallResult>
@@ -985,7 +988,18 @@ function createServices(): Services {
     })
   }).catch(error => events.output('plugin', 'error', `旧整合包/插件池迁移失败：${error instanceof Error ? error.message : String(error)}`))
 
-  return { settings, pluginReceiptsPath, runtime, installer, launcherUpdater, pluginTrial, aiInstaller, copilot, packManager: packManager!, githubAuth, applicationAddons, catalogSync, dshMarket, desktopPlugins, recommendedWebUi, runtimeVersions, profiles: profileService, profilePoolReady, restoreOfficialPack, listOfficialPackVersions: async () => listOfficialPackVersions(await officialListDeps()), readOfficialPackStatus: force => resolveOfficialPackStatus(force === true), installOfficialPackVersion, officialPackBootstrap }
+  const agentCli = createAgentCliManager({
+    registryPath: path.join(userData, 'agents.json'),
+    prefixRoot: path.join(userData, 'agent-cli'),
+    resolveNode: async () => {
+      const nodeRuntime = await prepareNodeRuntime('plugin')
+      return { node: nodeRuntime.node, npm: nodeRuntime.npm }
+    },
+    readNpmRegistry: () => settings.read().then(value => value.network?.npmRegistry ?? null),
+    onOutput: (level, text) => events.output('plugin', level, text),
+  })
+
+  return { settings, pluginReceiptsPath, runtime, installer, launcherUpdater, pluginTrial, aiInstaller, copilot, packManager: packManager!, githubAuth, applicationAddons, catalogSync, dshMarket, desktopPlugins, recommendedWebUi, runtimeVersions, profiles: profileService, agentCli, profilePoolReady, restoreOfficialPack, listOfficialPackVersions: async () => listOfficialPackVersions(await officialListDeps()), readOfficialPackStatus: force => resolveOfficialPackStatus(force === true), installOfficialPackVersion, officialPackBootstrap }
 }
 
 function openMainWindow(): void {

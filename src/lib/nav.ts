@@ -13,6 +13,7 @@ export interface HomeTabDefinition {
 export const HOME_TABS: ReadonlyArray<HomeTabDefinition> = [
   { id: 'start', label: '启动' },
   { id: 'packs', label: '整合包' },
+  { id: 'agents', label: 'Agent 工具' },
   { id: 'versions', label: 'DSH版本' },
   { id: 'plugins', label: '插件' },
   { id: 'skills', label: '技能' },
